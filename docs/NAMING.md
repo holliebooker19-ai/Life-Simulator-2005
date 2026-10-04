@@ -9,9 +9,9 @@
 | X（原推特） | Y | 已确认 |
 | 推特 / Twitter | 小蓝鸟 | 已确认 |
 | OpenAI | closeai | 已确认 |
-| Anthropic | 熵派（Entropic） | **建议，待用户确认**：取“熵增”的梗 |
-| Claude | 土块（Clod） | **建议，待用户确认** |
-| ChatGPT | ChatGPD | 建议 |
+| Anthropic | 熵派（Entropic） | 已确认，取“熵增”的梗 |
+| Claude | cloud | 已确认 |
+| ChatGPT | ChatGPD | 已确认 |
 
 ## 写作约定
 - 国家、球队、历史年份、世界杯结果等非个人/公司的事实可以直接使用。

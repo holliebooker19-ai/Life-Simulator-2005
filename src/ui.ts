@@ -19,7 +19,7 @@ let speed = 1
 export function showTitle(): void {
   app.replaceChildren()
   const box = h('div', 'screen center')
-  box.append(h('h1', 'title', '2005重生'), h('p', 'sub', '带着 2026 年的记忆，回到 2005 年出生的那一天。'))
+  box.append(h('h1', 'title', '1998重生'), h('p', 'sub', '带着 2026 年的记忆，回到 1998 年出生的那一天。'))
   const btn = h('button', 'btn big', '开始重生')
   btn.onclick = showDraw
   box.append(btn)
@@ -61,7 +61,7 @@ async function startGame(origin: Origin, talents: Talent[]): Promise<void> {
   const wrap = h('div', 'game')
   const panel = h('aside', 'panel')
   const main = h('main', 'main')
-  const header = h('div', 'year', '2005 · 0岁')
+  const header = h('div', 'year', '1998 · 0岁')
   const divWrap = h('div', 'diverge')
   const divBar = h('div', 'diverge-bar')
   divWrap.append(h('span', '', '世界线偏离度'), divBar)
@@ -159,7 +159,7 @@ function showEnding(s: GameState, e: ReturnType<typeof import('./engine').comput
   const bar = h('div', 'bar')
   const save = h('a', 'btn', '保存分享图') as HTMLAnchorElement
   save.href = img.src
-  save.download = 'life-2005.png'
+  save.download = 'life-1998.png'
   const again = h('button', 'btn big', '再活一次')
   again.onclick = showTitle
   bar.append(save, again)

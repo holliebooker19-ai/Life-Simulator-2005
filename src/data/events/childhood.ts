@@ -7,7 +7,7 @@ export const childhoodEvents: GameEvent[] = [
     requires: { maxAge: 2 },
     weight: 20,
     title: '第一句话',
-    text: '你终于学会开口了。脑子里全是二十一年后的记忆，嘴上却只能说得出“爸爸”。你决定先说点什么？',
+    text: '你终于学会开口了。脑子里全是二十八年后的记忆，嘴上却只能说得出“爸爸”。你决定先说点什么？',
     choices: [
       { text: '乖乖叫一声“爸爸”', outcomes: [{ text: '全家人都乐坏了，爸爸感动得红了眼眶。', effects: { stats: { happiness: 5, charm: 3 } } }] },
       {

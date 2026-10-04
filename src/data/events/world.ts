@@ -8,7 +8,7 @@ export const worldEvents: GameEvent[] = [
     requires: { minAge: 18, statMin: { intelligence: 70, wealth: 1000 } },
     weight: 6,
     title: 'closeai 的邀请',
-    text: '你在 2023 年之前就知道大模型会改变世界。有一家叫 closeai 的公司，正愁没有足够的钱。',
+    text: '你早在 2023 年之前就知道大模型会改变世界。有一家叫 closeai 的公司，正愁没有足够的钱。',
     realFact: '示意：2022 年末起大语言模型应用迅速爆发。涉及真实公司，已改名处理，见 docs/NAMING.md。',
     choices: [
       {

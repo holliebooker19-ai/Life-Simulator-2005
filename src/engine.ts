@@ -3,7 +3,7 @@ import type {
 } from './types'
 import { weightedPick, type Rng } from './rng'
 
-export const BIRTH_YEAR = 2005
+export const BIRTH_YEAR = 1998
 /** 现实记忆的终点：之后不再有“预知”，进入自行经营世界线阶段 */
 export const MEMORY_END_YEAR = 2026
 export const MAX_AGE = 70

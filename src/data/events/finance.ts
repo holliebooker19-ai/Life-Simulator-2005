@@ -31,9 +31,9 @@ export const financeEvents: GameEvent[] = [
     category: 'finance',
     rarity: 'rare',
     year: 2017,
-    requires: { minAge: 10 },
+    requires: { minAge: 16 },
     title: '一种叫比特币的东西',
-    text: '你听到同学的哥哥在说一种叫“比特币”的东西。你知道它未来会涨成什么样。可你还只是个初中生，钱要找谁拿？',
+    text: '你在宿舍里听到有人聊起一种叫“比特币”的东西。你知道它未来会涨成什么样。可你只是个学生，手上能动用的钱并不多。',
     realFact: '2017 年比特币从年初约 1000 美元涨到年底接近 20000 美元，之后大幅回落。',
     choices: [
       {
@@ -46,9 +46,9 @@ export const financeEvents: GameEvent[] = [
         ],
       },
       {
-        text: '用压岁钱买一点点',
+        text: '用生活费买一点点',
         outcomes: [
-          { weight: 2, text: '你用压岁钱买了一点点，几年后回头看，也算小赚。', effects: { stats: { wealth: 20, happiness: 3 } } },
+          { weight: 2, text: '你用生活费买了一点点，几年后回头看，也算小赚。', effects: { stats: { wealth: 20, happiness: 3 } } },
           { weight: 1, text: '钱不多，你很快也就忘了这件事。', effects: {} },
         ],
       },
@@ -60,7 +60,7 @@ export const financeEvents: GameEvent[] = [
     category: 'finance',
     rarity: 'legendary',
     year: 2022,
-    requires: { minAge: 15 },
+    requires: { minAge: 20 },
     title: '2022 年世界杯',
     text: '卡塔尔世界杯开赛。你已经攒了一笔钱，你清楚地记得决赛的比分：阿根廷对法国，3:3，点球大战。你要押多少？',
     realFact: '2022 年卡塔尔世界杯决赛，阿根廷与法国常规与加时 3:3，点球大战 4:2 阿根廷夺冠。',
@@ -73,7 +73,7 @@ export const financeEvents: GameEvent[] = [
           { tag: 'misremember', text: '你把记忆里的另一场比赛弄混了，押错了队，血本无归。', effects: { stats: { wealth: -300, happiness: -15 } } },
         ],
       },
-      { text: '小注怡情', outcomes: [{ text: '你小赚一笔，请同学们吃了顿火锅。', effects: { stats: { wealth: 20, happiness: 5 } } }] },
+      { text: '小注怡情', outcomes: [{ text: '你小赚一笔，请朋友们吃了顿火锅。', effects: { stats: { wealth: 20, happiness: 5 } } }] },
       { text: '不碰赌博', outcomes: [{ text: '你安静看球，只是为梅西落了一次泪。', effects: { stats: { happiness: 3 } } }] },
     ],
   },

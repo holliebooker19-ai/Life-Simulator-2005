@@ -10,8 +10,8 @@
 ## 字段要点
 - `id`：kebab-case，全局唯一，以类别开头。
 - `year`：现实历史节点才用；必须同时写 `realFact`，并遵守 `NAMING.md`。
-- `requires.minAge`：**必须考虑主角年龄**。2005 年出生，2010 年 5 岁，2017 年 12 岁，2020 年 15 岁，2022 年 17 岁。
-  年龄不足的现实事件用“父母代理”（`flags: ['family-has-money']` 或 `['parents-trust']`）。
+- `requires.minAge`：**必须考虑主角年龄**。1998 年出生：2005 年 7 岁，2008 年 10 岁，2010 年 12 岁，2013 年 15 岁，2017 年 19 岁，2020 年 22 岁，2022 年 24 岁，2026 年 28 岁。
+  15 岁（2013 年）前的现实事件用“父母代理”（`flags: ['family-has-money']` 或 `['parents-trust']`）。
 - 选项：每个带选项的事件**至少一个无条件选项**（防卡死）。
 - `usesMemory: true` 的选项必须包含 `tag: 'success'` 与 `tag: 'misremember'`（或 `'fail'`）结果。
 - 赌博/随机：同一选项里写多个 `outcomes` 并配 `weight`。

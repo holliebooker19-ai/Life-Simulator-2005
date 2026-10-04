@@ -1,4 +1,4 @@
-import { formatWealth } from './engine'
+import { BIRTH_YEAR, formatWealth } from './engine'
 import type { Ending, GameState } from './types'
 
 /** 生成分享图（canvas → PNG dataURL） */
@@ -15,7 +15,7 @@ export function renderShareImage(s: GameState, e: Ending): string {
 
   g.fillStyle = '#ffd86b'
   g.font = 'bold 40px sans-serif'
-  g.fillText('2005重生 · 人生模拟器', 48, 90)
+  g.fillText('1998重生 · 人生模拟器', 48, 90)
 
   g.font = 'bold 220px sans-serif'
   g.fillStyle = e.grade === 'S' ? '#ff6b6b' : e.grade === 'A' ? '#ffd86b' : '#9ad1ff'
@@ -30,7 +30,7 @@ export function renderShareImage(s: GameState, e: Ending): string {
   const lines = [
     `出身：${s.origin?.name ?? '-'}`,
     `天赋：${s.talents.map((t) => t.name).join(' / ')}`,
-    `享年：${s.age} 岁（2005—${s.year}）`,
+    `享年：${s.age} 岁（${BIRTH_YEAR}—${s.year}）`,
     `财富：${formatWealth(s.stats.wealth)}`,
     `名望 ${Math.round(s.stats.fame)}  影响力 ${Math.round(s.stats.influence)}`,
     `世界线偏离度：${Math.round(s.divergence)}%`,
@@ -39,6 +39,6 @@ export function renderShareImage(s: GameState, e: Ending): string {
 
   g.font = '24px sans-serif'
   g.fillStyle = '#7f8db3'
-  g.fillText('带着2026年的记忆，重生在2005年', 48, 900)
+  g.fillText('带着2026年的记忆，重生在1998年', 48, 900)
   return c.toDataURL('image/png')
 }

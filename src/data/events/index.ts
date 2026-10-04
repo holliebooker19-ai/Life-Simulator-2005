@@ -1,5 +1,6 @@
 import type { GameEvent } from '../../types'
 import { childhoodEvents } from './childhood'
+import { earlyYearsEvents } from './early-years'
 import { financeEvents } from './finance'
 import { worldEvents } from './world'
 
@@ -9,6 +10,7 @@ import { worldEvents } from './world'
  */
 export const ALL_EVENTS: GameEvent[] = [
   ...childhoodEvents,
+  ...earlyYearsEvents,
   ...financeEvents,
   ...worldEvents,
 ]

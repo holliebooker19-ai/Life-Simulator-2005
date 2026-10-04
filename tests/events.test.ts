@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ALL_EVENTS } from '../src/data/events'
 
 // 真实人名/公司名黑名单：出现即说明没有按 docs/NAMING.md 改名
-const FORBIDDEN = ['马斯克', 'Musk', 'OpenAI', 'Anthropic', 'Twitter', '推特', 'ChatGPT', 'Claude', '特朗普', 'Trump']
+const FORBIDDEN = ['马斯克', 'Musk', 'OpenAI', 'Anthropic', 'Twitter', '推特', 'ChatGPT', 'Claude', '特朗普', 'Trump', '习近平', '普京', '拜登', '奥巴马', 'Putin', 'Biden', 'Obama']
 
 describe('events', () => {
   it('id 全局唯一', () => {

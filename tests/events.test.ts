@@ -4,6 +4,7 @@ import { ALL_ACTIONS } from '../src/data/actions'
 import { ALL_EVENTS } from '../src/data/events'
 import { EXTRA_CHOICES } from '../src/data/extra-choices'
 import { HEADLINES } from '../src/data/headlines'
+import { QUIZZES } from '../src/data/quizzes'
 import { WORLD_VARS } from '../src/data/world'
 import type { Choice, Condition } from '../src/types'
 import { availableActions, markAction, newState, withExtraChoices } from '../src/engine'
@@ -190,6 +191,38 @@ describe('世界线与科技树', () => {
 
   it('新闻不含真实人名/公司名', () => {
     const blob = JSON.stringify(HEADLINES)
+    for (const w of [...FORBIDDEN, ...namingForbidden()]) expect(blob.includes(w), `出现未改名的词：${w}`).toBe(false)
+  })
+})
+
+describe('预知题库（P2）', () => {
+  const byId = new Map(ALL_EVENTS.map((e) => [e.id, e]))
+  /** 没法出确凿题目的现实事件（如高考作文题因省份而异），保留旧的掷骰判定 */
+  const NO_QUIZ = ['y1620-2016-gaokao']
+
+  it('题目指向存在的事件，且事件有利用记忆的选项；选项和答案合法', () => {
+    for (const [id, q] of Object.entries(QUIZZES)) {
+      const ev = byId.get(id)
+      expect(ev, `题库里的 ${id} 不存在`).toBeDefined()
+      expect(ev!.choices?.some((c) => c.usesMemory), `${id}: 没有利用记忆的选项`).toBe(true)
+      expect(q.options.length, id).toBeGreaterThanOrEqual(3)
+      expect(new Set(q.options).size, `${id}: 选项重复`).toBe(q.options.length)
+      expect(q.answer, id).toBeGreaterThanOrEqual(0)
+      expect(q.answer, id).toBeLessThan(q.options.length)
+      if (q.shiftedAnswer !== undefined) expect(ev!.dependsOn?.length, `${id}: shiftedAnswer 需要 dependsOn`).toBeGreaterThan(0)
+    }
+  })
+
+  it('2026 年前每个现实事件里的预知选项都有题目', () => {
+    for (const e of ALL_EVENTS) {
+      if (e.year === undefined || e.year > 2026 || NO_QUIZ.includes(e.id)) continue
+      if (!e.choices?.some((c) => c.usesMemory)) continue
+      expect(!!(e.quiz || QUIZZES[e.id] || e.choices.every((c) => !c.usesMemory || c.quiz)), `${e.id}: 缺少预知题`).toBe(true)
+    }
+  })
+
+  it('题库里没有真名', () => {
+    const blob = JSON.stringify(QUIZZES)
     for (const w of [...FORBIDDEN, ...namingForbidden()]) expect(blob.includes(w), `出现未改名的词：${w}`).toBe(false)
   })
 })

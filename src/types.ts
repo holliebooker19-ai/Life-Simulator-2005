@@ -33,6 +33,8 @@ export interface Effects {
   world?: Record<string, number>
   /** 寿命上限增减（科技树延寿等） */
   maxAge?: number
+  /** 亲人状态增减：父母身体、与伴侣的感情（见 Relations） */
+  rel?: Partial<Record<'parents' | 'partner', number>>
 }
 
 export interface Condition {
@@ -56,6 +58,39 @@ export interface Condition {
   /** 世界状态变量范围，未设置的变量视为 0 */
   worldMin?: Record<string, number>
   worldMax?: Record<string, number>
+  /** 亲人状态范围（见 RelKey）。没有孩子时 childAge 为 -1，写孩子的事件请同时要求 has-child */
+  relMin?: Partial<Record<RelKey, number>>
+  relMax?: Partial<Record<RelKey, number>>
+}
+
+/**
+ * 预知题：玩家选择“利用记忆”的选项后作答。答对按 success 结算，答错按 misremember/fail 结算；
+ * 也可以“交给直觉”，按旧的掷骰判定（成功率打折）。题目只用确凿的史实。
+ */
+export interface Quiz {
+  q: string
+  /** 3–4 个选项 */
+  options: string[]
+  /** 正确答案的下标（原历史） */
+  answer: number
+  /**
+   * 世界线偏移后（事件 dependsOn 的锚点被改写）真正的答案。记忆提示仍然指向 answer，变成“陷阱题”。
+   * 不写时，偏移后答对也只有一半把握。
+   */
+  shiftedAnswer?: number
+}
+
+/** 记忆给出的提示：排除的错误选项、“记忆闪回”直接给出的答案、交给直觉的成功率 */
+export interface QuizHint {
+  eliminated: number[]
+  flash?: number
+  intuition: number
+}
+
+/** 预知选项的判定结果：quiz = 自己作答，intuition = 交给直觉，dice = 没有题目的旧判定 */
+export interface MemoryCheck {
+  reliable: boolean
+  via: 'quiz' | 'intuition' | 'dice'
 }
 
 export interface Outcome {
@@ -79,6 +114,8 @@ export interface Choice {
   usesMemory?: boolean
   /** 通用“自由发挥”选项（由引擎追加到事件里，UI 会特别标注） */
   free?: boolean
+  /** 预知题（只对 usesMemory 有效）；不写时用事件的 quiz 或题库 src/data/quizzes.ts */
+  quiz?: Quiz
   /** 结果列表，按权重随机；只有一个即为确定结果 */
   outcomes: (Outcome & { tag?: 'success' | 'fail' | 'misremember' })[]
 }
@@ -117,6 +154,8 @@ export interface GameEvent {
   text: string
   /** 按世界状态替换标题/正文：取第一个满足条件的版本（重量世界线用它做“同一事件、不同世界”的变体） */
   variants?: { requires: Condition; title?: string; text: string }[]
+  /** 事件里所有 usesMemory 选项共用的预知题（也可以写在题库 src/data/quizzes.ts） */
+  quiz?: Quiz
   /** 依赖的历史锚点：其中任何一个被改写，事件会标注“世界线已偏移”，预知可靠度减半 */
   dependsOn?: string[]
   /** 无 choices 表示自动事件：直接结算 effects */
@@ -167,7 +206,24 @@ export interface GameState {
   /** 一生快乐值累计，用于结局的“幸福”维度 */
   joySum: number
   joyYears: number
+  /** 亲人：父母、伴侣、孩子（DESIGN_V2 P5） */
+  rel: Relations
 }
+
+/** 亲人的状态。父母年龄、孩子年龄由年份派生，见 engine.relOf */
+export interface Relations {
+  /** 父母的身体状况 0-100，随年龄下降 */
+  parents: number
+  /** 已经离世的父母人数 0-2 */
+  parentsLost: number
+  /** 和伴侣的感情 1-100；没有伴侣时为 0 */
+  partner: number
+  /** 第一个孩子的出生年份；0 = 还没有孩子 */
+  childBorn: number
+}
+
+/** 条件里可读的亲人状态：parentAge / childAge 为派生值 */
+export type RelKey = 'parentAge' | 'parents' | 'parentsLost' | 'partner' | 'childAge'
 
 /** 年度账单：每年年底结算的收入与开销，单位万元 */
 export interface YearBill {

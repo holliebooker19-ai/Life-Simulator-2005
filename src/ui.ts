@@ -1,12 +1,14 @@
 import { bannerEl, heroEl } from './art'
-import { formatWealth, worldlineDiff, worldOf } from './engine'
+import { formatWealth, relOf, worldlineDiff, worldOf } from './engine'
 import { HEADLINES } from './data/headlines'
 import { TECH_MAX, WORLD_VARS } from './data/world'
 import { ORIGINS, TALENTS } from './data/talents'
 import { ALLOC_MAX, ALLOC_STATS, drawOrigin, drawTalent, runGame, START_POINTS, START_REROLLS, type Host } from './game'
 import { clearSave, loadGame, saveGame } from './save'
 import { renderShareImage } from './share'
-import type { ActionGroup, Choice, EndingDim, GameAction, GameEvent, GameState, Origin, Outcome, Rarity, StatKey, Talent } from './types'
+import type {
+  ActionGroup, Choice, EndingDim, GameAction, GameEvent, GameState, MemoryCheck, Origin, Outcome, Rarity, StatKey, Talent,
+} from './types'
 
 const app = document.getElementById('app')!
 
@@ -175,7 +177,8 @@ async function startGame(origin: Origin, talents: Talent[], alloc: Record<string
     row.append(h('span', '', label), v)
     grid.append(row)
   }
-  panel.append(top, divWrap, grid)
+  const family = h('div', 'family')
+  panel.append(top, divWrap, grid, family)
   const log = h('div', 'log')
   const stage = h('div', 'stage')
   main.append(log, stage)
@@ -206,6 +209,7 @@ async function startGame(origin: Origin, talents: Talent[], alloc: Record<string
     header.textContent = `${s.year} · ${s.age}岁`
     for (const [k] of STAT_LABELS) roll(k, s.stats[k])
     divBar.style.width = `${s.divergence}%`
+    family.replaceChildren(...familyLines(s).map((t) => h('p', '', t)))
   }
   const addLog = (s: GameState, ev: GameEvent, extra: string) => {
     const line = h('div', `log-line ${ev.rarity ?? 'common'}`)
@@ -292,8 +296,32 @@ async function startGame(origin: Origin, talents: Talent[], alloc: Record<string
       reveal()
       return p
     },
-    async showOutcome(ev, outcome: Outcome, reliable, s, auto) {
-      const note = reliable === false ? '（记忆出现偏差！）' : ''
+    async showQuiz(ev, _choice, quiz, hint, s) {
+      const box = h('div', `event quiz ${ev.rarity ?? 'common'}`)
+      const m = Math.round(s.stats.memory)
+      const tip = hint.flash !== undefined
+        ? `记忆 ${m}：记忆闪回！答案自己浮现在眼前。`
+        : hint.eliminated.length
+          ? `记忆 ${m}：你很确定，不是划掉的那 ${hint.eliminated.length} 个。`
+          : `记忆 ${m}：记忆太模糊了，只能靠你自己。`
+      box.append(h('h3', '', `回忆一下：${quiz.q}`), h('p', 'muted', tip))
+      return new Promise<number | null>((res) => {
+        quiz.options.forEach((opt, i) => {
+          const out = hint.eliminated.includes(i)
+          const b = h('button', `btn choice${out ? ' out' : ''}${hint.flash === i ? ' flash' : ''}`, opt)
+          b.disabled = out
+          b.onclick = () => { stage.replaceChildren(); res(i) }
+          box.append(b)
+        })
+        const gut = h('button', 'btn choice skip', `想不起来，交给直觉（约 ${Math.round(hint.intuition * 100)}% 把握）`)
+        gut.onclick = () => { stage.replaceChildren(); res(null) }
+        box.append(gut)
+        stage.replaceChildren(box)
+        reveal()
+      })
+    },
+    async showOutcome(ev, outcome: Outcome, check, s, auto) {
+      const note = checkNote(check)
       addLog(s, ev, `${outcome.text}${note}`)
       reveal()
       if (auto) await sleep(1500 / speed)
@@ -304,6 +332,29 @@ async function startGame(origin: Origin, talents: Talent[], alloc: Record<string
   const { state, ending } = await runGame(origin, talents, host, Math.random, alloc, resume)
   clearSave()
   showEnding(state, ending)
+}
+
+function checkNote(c?: MemoryCheck): string {
+  if (!c) return ''
+  if (c.via === 'quiz') return c.reliable ? '（答对了！）' : '（答错了：历史不是这样走的。）'
+  if (c.via === 'intuition') return c.reliable ? '（直觉对了！）' : '（直觉失灵了！）'
+  return c.reliable ? '' : '（记忆出现偏差！）'
+}
+
+/** 侧栏的“家人”一栏 */
+function familyLines(s: GameState): string[] {
+  if (s.age < 16) return []
+  const lines: string[] = []
+  const r = s.rel
+  if (r.parentsLost >= 2) lines.push('父母：已离世')
+  else lines.push(`父母：${relOf(s, 'parentAge')} 岁 · ${r.parents >= 70 ? '身体硬朗' : r.parents >= 40 ? '有些小毛病' : '身体不好'}${r.parentsLost ? '（一位已离世）' : ''}`)
+  if (s.flags.has('married') || s.flags.has('partner')) {
+    const who = s.flags.has('married') ? '伴侣' : '恋人'
+    lines.push(`${who}：${!r.partner ? '刚刚在一起' : r.partner >= 70 ? '感情很好' : r.partner >= 40 ? '平平淡淡' : '有些冷淡'}`)
+  }
+  const ca = relOf(s, 'childAge')
+  if (s.flags.has('has-child')) lines.push(`孩子：${ca > 0 ? `${ca} 岁` : '刚出生'}${s.flags.has('grandchild') ? ' · 已有孙辈' : ''}`)
+  return lines
 }
 
 /** 世界线面板：原历史 vs 你的世界、科技树、AI 格局、世界趋势 */

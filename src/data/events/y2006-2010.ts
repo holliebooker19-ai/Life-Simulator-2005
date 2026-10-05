@@ -339,15 +339,15 @@ export const y2006to2010Events: GameEvent[] = [
     requires: { minAge: 12 },
     title: '上海世博会',
     text: '2010 年，上海世博会开幕，同学们的暑假作业里多了一项“参观世博园”。听说每天都有几万人排队，有的场馆要排四五个小时。你记得，这届世博会参观人数多得吓人。',
-    realFact: '2010 年上海世博会于 5 月 1 日开幕、10 月 31 日闭幕，主题为“城市，让生活更美好”，累计参观人数超过七千万。依据：上海世博会官方统计与通行新闻报道。',
+    realFact: '2010 年上海世博会于 5 月 1 日开幕、10 月 31 日闭幕，主题为“城市，让生活更美好”，累计参观人数超过七千万；开园初期客流偏少，暑期和十月是高峰，10 月 16 日单日参观人数超过 100 万，创下单日纪录。依据：上海世博会官方统计与通行新闻报道。',
     choices: [
       {
-        text: '劝爸妈：“别挑暑假去，十月初人最少。”',
+        text: '劝爸妈：“别挑暑假和十月，五月刚开园的时候人最少。”',
         requires: { flags: ['parents-trust'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '一家人避开暑期高峰，选在人少的日子去，不到半小时就进了几个热门场馆。同学们听了直羡慕。', effects: { stats: { happiness: 6, influence: 2, intelligence: 1 } } },
-          { tag: 'misremember', text: '你把最后一周的人潮记成了冷清，结果赶上最后几天，人山人海，全家什么展馆也没进去。', effects: { stats: { happiness: -4, health: -2 } } },
+          { tag: 'success', text: '一家人赶在五月开园不久就去了，不到半小时就进了几个热门场馆。同学们暑假排了五个小时队，听了直羡慕。', effects: { stats: { happiness: 6, influence: 2, intelligence: 1 } } },
+          { tag: 'misremember', text: '你把开园和闭幕前的人潮记反了，全家拖到十月才去，正赶上单日上百万人的高峰，什么展馆也没进去。', effects: { stats: { happiness: -4, health: -2 } } },
         ],
       },
       {

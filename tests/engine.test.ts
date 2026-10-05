@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   actionPoints, pacing, applyEffects, computeEnding, endYear, headlinesFor, influenceIncome, isShifted, joyBaseline, meets,
-  memoryReliability, mortality, newState, pickEvents, presentEvent, resolveChoice, settleYear, worldlineDiff, yearlyDrift,
+  memoryReliability, mortality, newState, pickEvents, presentEvent, quizHint, relationsDrift, relOf, resolveChoice, settleYear,
+  worldlineDiff, yearlyDrift, INTUITION_RATE,
 } from '../src/engine'
 import { deserialize, serialize } from '../src/save'
 
@@ -58,8 +59,9 @@ describe('年份条件与行动点', () => {
 describe('节奏 pacing', () => {
   it('襁褓期自动继续、无自由发挥选项；之后恢复', () => {
     const s = newState()
-    s.age = 2
     expect(pacing(s)).toMatchObject({ randomEvents: 0, extraChoices: 0, autoAdvance: true })
+    s.age = 2
+    expect(pacing(s)).toMatchObject({ randomEvents: 1, actionPoints: 0, extraChoices: 0, autoAdvance: true })
     s.age = 5
     expect(pacing(s)).toMatchObject({ actionPoints: 0, extraChoices: 0, autoAdvance: true })
     s.age = 8
@@ -169,6 +171,145 @@ describe('存档', () => {
     expect(back.altered).toEqual({ a: 3 })
     expect(deserialize('not json')).toBeNull()
   })
+
+  it('旧存档缺少新字段时用默认值补齐，不会崩溃', () => {
+    const s = newState()
+    const old = JSON.parse(serialize(s))
+    delete old.data.world; delete old.data.rel; delete old.data.maxAge
+    const back = deserialize(JSON.stringify(old))!
+    expect(back.world).toEqual({})
+    expect(back.maxAge).toBe(100)
+    expect(back.rel.parents).toBeGreaterThan(0)
+    applyEffects(back, { world: { crypto: 1 }, rel: { parents: -5 } })
+    expect(back.world.crypto).toBe(1)
+  })
+})
+
+describe('固定事件溢出', () => {
+  it('挤不进 4 个名额的现实事件转为当年的随机候选', () => {
+    const s = newState(); s.year = 2016; s.age = 18
+    const mk = (id: string) => ({ id, category: 'world' as const, year: 2016, title: id, text: id })
+    const pool = [mk('a'), mk('b'), mk('c'), mk('d'), mk('e')]
+    const ids = pickEvents(s, pool, () => 0.5, 1).map((e) => e.id)
+    expect(ids).toHaveLength(5)
+    expect(new Set(ids).size).toBe(5)
+  })
+})
+
+describe('预知答题（P2）', () => {
+  const quiz = { q: '冠军是？', options: ['甲', '乙', '丙', '丁'], answer: 2 }
+  const choice = {
+    text: 'c', usesMemory: true,
+    outcomes: [{ tag: 'success' as const, text: 'ok' }, { tag: 'misremember' as const, text: 'bad' }],
+  }
+
+  it('记忆越高提示越多：≥40 排除 1 个，≥70 排除 2 个，≥90 闪回；永远不排除正确答案', () => {
+    const s = newState(); s.year = 2010
+    for (const [m, n] of [[30, 0], [50, 1], [75, 2], [95, 2]] as const) {
+      s.stats.memory = m
+      for (const r of [0, 0.3, 0.99]) {
+        const hint = quizHint(s, quiz, () => r)
+        expect(hint.eliminated).toHaveLength(n)
+        expect(hint.eliminated).not.toContain(2)
+      }
+    }
+    expect(quizHint(s, quiz, () => 0.5).flash).toBe(2)
+    s.stats.memory = 80
+    expect(quizHint(s, quiz, () => 0.5).flash).toBeUndefined()
+    // 2026 年之后记忆失效
+    s.year = 2030; s.stats.memory = 100
+    expect(quizHint(s, quiz, () => 0.5).eliminated).toHaveLength(0)
+  })
+
+  it('答对走 success，答错走 misremember；交给直觉按打折的掷骰', () => {
+    const s = newState(); s.year = 2010; s.stats.memory = 100
+    expect(resolveChoice(s, choice, () => 0.99, { quiz, pick: 2 })).toMatchObject({ outcome: { text: 'ok' }, check: { reliable: true, via: 'quiz' } })
+    expect(resolveChoice(s, choice, () => 0, { quiz, pick: 1 })).toMatchObject({ outcome: { text: 'bad' }, check: { reliable: false, via: 'quiz' } })
+    const rate = memoryReliability(s) * INTUITION_RATE
+    expect(resolveChoice(s, choice, () => rate - 0.01, { quiz, pick: null }).check).toEqual({ reliable: true, via: 'intuition' })
+    expect(resolveChoice(s, choice, () => rate + 0.01, { quiz, pick: null }).check).toEqual({ reliable: false, via: 'intuition' })
+    // 没有题目：旧的掷骰，不打折
+    expect(resolveChoice(s, choice, () => rate + 0.01).check).toEqual({ reliable: true, via: 'dice' })
+  })
+
+  it('世界线偏移后：有 shiftedAnswer 时原答案变成陷阱', () => {
+    const s = newState(); s.year = 2010; s.stats.memory = 95
+    const trap = { ...quiz, shiftedAnswer: 0 }
+    expect(quizHint(s, trap, () => 0.5, true).flash).toBe(2)
+    expect(resolveChoice(s, choice, () => 0, { quiz: trap, pick: 2, shifted: true }).check?.reliable).toBe(false)
+    expect(resolveChoice(s, choice, () => 0.99, { quiz: trap, pick: 0, shifted: true }).check?.reliable).toBe(true)
+    // 没有 shiftedAnswer：答对也只有一半把握
+    expect(resolveChoice(s, choice, () => 0.7, { quiz, pick: 2, shifted: true }).check?.reliable).toBe(false)
+    expect(resolveChoice(s, choice, () => 0.3, { quiz, pick: 2, shifted: true }).check?.reliable).toBe(true)
+  })
+
+  it('记忆褪色：10 岁起到 2026 年每年下降，之后不再变化', () => {
+    const s = newState(); s.age = 12; s.year = 2010; s.stats.memory = 60
+    yearlyDrift(s)
+    expect(s.stats.memory).toBeLessThan(60)
+    const t = newState(); t.age = 30; t.year = 2028; t.stats.memory = 60
+    yearlyDrift(t)
+    expect(t.stats.memory).toBe(60)
+    // 写过“未来备忘录”的人褪得慢
+    const n = newState(); n.age = 12; n.year = 2010; n.stats.memory = 60; n.flags.add('future-notebook')
+    yearlyDrift(n)
+    expect(n.stats.memory).toBeGreaterThan(s.stats.memory)
+  })
+})
+
+describe('亲人（P5）', () => {
+  it('父母随年龄变老，离世时写入标记；最多两位', () => {
+    const s = newState(); s.age = 50
+    expect(relOf(s, 'parentAge')).toBe(76)
+    const before = s.rel.parents
+    relationsDrift(s, () => 0.99)
+    expect(s.rel.parents).toBeLessThan(before)
+    relationsDrift(s, () => 0)
+    expect(s.rel.parentsLost).toBe(2)
+    expect(s.flags.has('parent-lost')).toBe(true)
+    expect(s.flags.has('parents-gone')).toBe(true)
+    relationsDrift(s, () => 0)
+    expect(s.rel.parentsLost).toBe(2)
+  })
+
+  it('感情：有伴侣时初始化，不经营会变淡但不会归零，分手后清零', () => {
+    const s = newState(); s.age = 25; s.stats.happiness = 50
+    s.flags.add('married')
+    relationsDrift(s, () => 0.99)
+    expect(s.rel.partner).toBe(70)
+    relationsDrift(s, () => 0.99)
+    expect(s.rel.partner).toBeLessThan(70)
+    applyEffects(s, { rel: { partner: -500 } })
+    expect(s.rel.partner).toBe(1)
+    expect(meets(s, { relMax: { partner: 20 } })).toBe(true)
+    s.flags.delete('married')
+    relationsDrift(s, () => 0.99)
+    expect(s.rel.partner).toBe(0)
+    applyEffects(s, { rel: { partner: 10 } })
+    expect(s.rel.partner).toBe(0)
+  })
+
+  it('孩子：记录出生年份，派生年龄；养孩子的开销到 22 岁为止', () => {
+    const s = newState(); s.age = 30; s.year = 2028
+    expect(relOf(s, 'childAge')).toBe(-1)
+    s.flags.add('has-child')
+    relationsDrift(s, () => 0.99)
+    expect(s.rel.childBorn).toBe(2028)
+    s.year = 2033
+    expect(relOf(s, 'childAge')).toBe(5)
+    expect(meets(s, { relMin: { childAge: 3 }, relMax: { childAge: 6 } })).toBe(true)
+    expect(settleYear(s).lines.join()).toContain('养孩子')
+    s.year = 2051
+    expect(settleYear(s).lines.join()).not.toContain('养孩子')
+  })
+
+  it('感情影响快乐基准', () => {
+    const s = newState(); s.age = 30; s.flags.add('married')
+    s.rel.partner = 90
+    const warm = joyBaseline(s)
+    s.rel.partner = 20
+    expect(joyBaseline(s)).toBeLessThan(warm)
+  })
 })
 
 describe('世界状态与科技树（P3）', () => {
@@ -202,7 +343,7 @@ describe('世界状态与科技树（P3）', () => {
     const choice = { text: 'c', usesMemory: true, outcomes: [{ tag: 'success' as const, text: 'ok' }, { tag: 'misremember' as const, text: 'bad' }] }
     // 可靠度约 0.97：不偏移时 0.6 判定成功，偏移后（减半）判定失败
     expect(resolveChoice(s, choice, () => 0.6).outcome.text).toBe('ok')
-    expect(resolveChoice(s, choice, () => 0.6, true).outcome.text).toBe('bad')
+    expect(resolveChoice(s, choice, () => 0.6, { shifted: true }).outcome.text).toBe('bad')
   })
 
   it('新闻与世界线对比：改写后显示你的版本', () => {
@@ -213,6 +354,14 @@ describe('世界状态与科技树（P3）', () => {
     expect(headlinesFor(s, pool)[0]).toEqual({ text: '新', altered: true })
     expect(worldlineDiff(s, pool)).toEqual([{ year: 2008, real: '原', mine: '新' }])
     expect(computeEnding(s, pool).newspaper[0]).toContain('新')
+  })
+
+  it('世界线面板不剧透当年还没发生的锚点', () => {
+    const pool = [{ year: 2010, anchor: 'y', real: '冠军是某队', altered: '新' }]
+    const s = newState(); s.year = 2010
+    expect(worldlineDiff(s, pool)).toHaveLength(0)
+    s.year = 2011
+    expect(worldlineDiff(s, pool)).toHaveLength(1)
   })
 
   it('影响力：财富、名望、公司、基金会每年带来影响力', () => {

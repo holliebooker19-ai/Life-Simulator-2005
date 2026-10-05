@@ -30,15 +30,15 @@ export const lifeActions: GameAction[] = [
     requires: { minAge: 24, maxAge: 45, flags: ['married'], notFlags: ['has-child'] },
     once: true,
     outcomes: [
-      { text: '你有了自己的孩子。熬夜换尿布的日子很累，可她第一次笑的时候，你什么都值了。', effects: { stats: { happiness: 12, wealth: -10, health: -2 }, addFlags: ['has-child'] } },
+      { text: '你有了自己的孩子。熬夜换尿布的日子很累，可孩子第一次冲你笑的时候，你觉得什么都值了。', effects: { stats: { happiness: 12, wealth: -10, health: -2 }, addFlags: ['has-child'] } },
     ],
   },
   {
     id: 'act-parent-care', group: 'life', text: '接父母来同住，照顾他们', hint: '快乐↑，花点钱',
-    requires: { minAge: 30, maxAge: 60 },
+    requires: { minAge: 30, maxAge: 60, relMax: { parentsLost: 1 } },
     cooldown: 3,
     outcomes: [
-      { text: '一家人其乐融融地吃饭，你觉得这样的日子很值得。', effects: { stats: { happiness: 7, wealth: -5 } } },
+      { text: '一家人其乐融融地吃饭，你觉得这样的日子很值得。', effects: { stats: { happiness: 7, wealth: -5 }, rel: { parents: 5 } } },
     ],
   },
   {

@@ -1,5 +1,6 @@
 import type {
-  Choice, GameAction, Condition, Effects, Ending, EndingDim, GameEvent, GameState, Headline, Origin, Outcome, Stats, StatKey, Talent, YearBill,
+  Choice, GameAction, Condition, Effects, Ending, EndingDim, GameEvent, GameState, Headline, MemoryCheck, Origin, Outcome, Quiz, QuizHint,
+  RelKey, Stats, StatKey, Talent, YearBill,
 } from './types'
 import { weightedPick, type Rng } from './rng'
 
@@ -12,6 +13,14 @@ export const MAX_AGE = 100
 export const STAT_CAP = 100
 /** 每年最多触发的固定年份事件数，超出的按稀有度取舍 */
 export const MAX_FIXED_PER_YEAR = 4
+/** 挤不进固定名额的现实事件转为当年的随机候选，权重乘以这个数 */
+export const OVERFLOW_WEIGHT = 4
+/** “交给直觉”的成功率折扣（相对旧的掷骰判定） */
+export const INTUITION_RATE = 0.7
+/** 记忆褪色：10 岁到 2026 年之间，记忆每年下降多少 */
+export const MEMORY_FADE = 0.8
+/** 父母比主角大多少岁 */
+export const PARENT_AGE_GAP = 26
 
 export function newState(): GameState {
   return {
@@ -31,6 +40,7 @@ export function newState(): GameState {
     world: {},
     joySum: 0,
     joyYears: 0,
+    rel: { parents: 85, parentsLost: 0, partner: 0, childBorn: 0 },
   }
 }
 
@@ -49,7 +59,17 @@ export function applyEffects(s: GameState, e?: Effects): void {
   e.removeFlags?.forEach((f) => s.flags.delete(f))
   for (const [k, v] of Object.entries(e.world ?? {})) s.world[k] = clamp((s.world[k] ?? 0) + v, -100, 100)
   if (e.maxAge) s.maxAge = Math.max(s.age + 1, s.maxAge + e.maxAge)
+  if (e.rel?.parents) s.rel.parents = clamp(s.rel.parents + e.rel.parents, 0, 100)
+  // 感情只在有伴侣时有意义：保持在 1 以上，分手/离婚由标记决定，年底归零
+  if (e.rel?.partner && s.rel.partner > 0) s.rel.partner = clamp(s.rel.partner + e.rel.partner, 1, 100)
   clampStats(s.stats)
+}
+
+/** 读取亲人状态（含派生的父母年龄、孩子年龄；没有孩子时 childAge 为 -1） */
+export function relOf(s: GameState, k: RelKey): number {
+  if (k === 'parentAge') return s.age + PARENT_AGE_GAP
+  if (k === 'childAge') return s.rel.childBorn ? s.year - s.rel.childBorn : -1
+  return s.rel[k]
 }
 
 /** 读取世界状态变量，未设置视为 0 */
@@ -83,6 +103,8 @@ export function meets(s: GameState, c?: Condition): boolean {
   if (c.notFlags?.some((f) => s.flags.has(f))) return false
   for (const [k, v] of Object.entries(c.worldMin ?? {})) if (worldOf(s, k) < v) return false
   for (const [k, v] of Object.entries(c.worldMax ?? {})) if (worldOf(s, k) > v) return false
+  for (const [k, v] of Object.entries(c.relMin ?? {}) as [RelKey, number][]) if (relOf(s, k) < v) return false
+  for (const [k, v] of Object.entries(c.relMax ?? {}) as [RelKey, number][]) if (relOf(s, k) > v) return false
   return true
 }
 
@@ -113,18 +135,19 @@ export function applyTalentOrigin(s: GameState, talents: Talent[], origin: Origi
 /** 选出本年要触发的事件：先固定年份事件，再按权重抽随机事件 */
 export function pickEvents(s: GameState, pool: GameEvent[], rng: Rng, maxRandom = 1): GameEvent[] {
   const available = pool.filter((e) => (e.once === false || e.annual || !s.seen.has(e.id)) && meets(s, e.requires))
-  // 同一年固定事件太多会让节奏拥挤：按稀有度保留前 MAX_FIXED_PER_YEAR 个（同稀有度保持原顺序）
-  const fixed = available
+  // 同一年固定事件太多会让节奏拥挤：按稀有度保留前 MAX_FIXED_PER_YEAR 个（同稀有度随机取舍，每局不同）
+  const ranked = available
     .filter((e) => e.year === s.year || e.annual)
-    .map((e, i) => ({ e, i }))
-    .sort((a, b) => RARITY_RANK[b.e.rarity ?? 'common'] - RARITY_RANK[a.e.rarity ?? 'common'] || a.i - b.i)
-    .slice(0, MAX_FIXED_PER_YEAR)
-    .sort((a, b) => a.i - b.i)
-    .map((x) => x.e)
+    .map((e, i) => ({ e, i, r: rng() }))
+    .sort((a, b) => RARITY_RANK[b.e.rarity ?? 'common'] - RARITY_RANK[a.e.rarity ?? 'common'] || a.r - b.r || a.i - b.i)
+  const fixed = ranked.slice(0, MAX_FIXED_PER_YEAR).sort((a, b) => a.i - b.i).map((x) => x.e)
+  // 挤不进去的现实事件不直接丢掉：转为当年的随机候选，权重加倍
+  const overflow = new Set(ranked.slice(MAX_FIXED_PER_YEAR).map((x) => x.e).filter((e) => !e.annual))
   const randoms: GameEvent[] = []
-  const candidates = available.filter((e) => e.year === undefined && !e.annual)
+  const candidates = available.filter((e) => (e.year === undefined && !e.annual) || overflow.has(e))
+  const weight = (e: GameEvent) => eventWeight(e) * (overflow.has(e) ? OVERFLOW_WEIGHT : 1)
   for (let i = 0; i < maxRandom; i++) {
-    const pick = weightedPick(candidates.filter((c) => !randoms.includes(c)), eventWeight, rng)
+    const pick = weightedPick(candidates.filter((c) => !randoms.includes(c)), weight, rng)
     if (pick) randoms.push(pick)
   }
   return [...fixed, ...randoms]
@@ -149,7 +172,7 @@ export interface Pacing {
 }
 
 export function pacing(s: GameState): Pacing {
-  if (s.age < 3) return { randomEvents: 0, actionPoints: 0, extraChoices: 0, autoAdvance: true }
+  if (s.age < 1) return { randomEvents: 0, actionPoints: 0, extraChoices: 0, autoAdvance: true }
   if (s.age < 7) return { randomEvents: 1, actionPoints: 0, extraChoices: 0, autoAdvance: true }
   if (s.age < 18) return { randomEvents: 2, actionPoints: 2, extraChoices: 2, autoAdvance: false }
   return { randomEvents: 2, actionPoints: 3, extraChoices: 2, autoAdvance: false }
@@ -194,17 +217,58 @@ export function memoryReliability(s: GameState): number {
   return Math.min(0.98, Math.max(0.05, base - penalty))
 }
 
+/**
+ * 记忆给出的提示：记忆 ≥40 排除 1 个错误选项，≥70 排除 2 个（至少留 2 个选项），≥90 “记忆闪回”直接给出答案。
+ * 提示永远指向原历史的答案：世界线偏移后它可能是错的。
+ */
+export function quizHint(s: GameState, quiz: Quiz, rng: Rng, shifted = false): QuizHint {
+  const m = s.year > MEMORY_END_YEAR ? 0 : s.stats.memory
+  const wrong = quiz.options.map((_, i) => i).filter((i) => i !== quiz.answer)
+  for (let i = wrong.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[wrong[i], wrong[j]] = [wrong[j], wrong[i]]
+  }
+  const n = Math.min(m >= 70 ? 2 : m >= 40 ? 1 : 0, wrong.length - 1)
+  return {
+    eliminated: wrong.slice(0, n).sort((a, b) => a - b),
+    flash: m >= 90 ? quiz.answer : undefined,
+    intuition: memoryReliability(s) * (shifted ? 0.5 : 1) * INTUITION_RATE,
+  }
+}
+
+/** 题目当前的正确答案：世界线偏移后可能换成 shiftedAnswer */
+export function quizAnswer(quiz: Quiz, shifted = false): number {
+  return shifted && quiz.shiftedAnswer !== undefined ? quiz.shiftedAnswer : quiz.answer
+}
+
+export interface ResolveOpts {
+  /** 事件所依赖的锚点被改写：记忆可靠度减半 */
+  shifted?: boolean
+  /** 本次判定用的预知题 */
+  quiz?: Quiz
+  /** 玩家的答案下标；null = 交给直觉；有题目却没作答也按直觉处理 */
+  pick?: number | null
+}
+
 export function resolveChoice(
   s: GameState,
   choice: Choice,
   rng: Rng,
-  /** 事件所依赖的锚点被改写时为 true：记忆可靠度减半 */
-  shifted = false,
-): { outcome: Outcome; reliable?: boolean } {
+  opts: ResolveOpts = {},
+): { outcome: Outcome; check?: MemoryCheck } {
+  const { shifted = false, quiz, pick } = opts
   let pool = choice.outcomes.filter((o) => meets(s, o.requires))
-  let reliable: boolean | undefined
+  let check: MemoryCheck | undefined
   if (choice.usesMemory) {
-    reliable = rng() < memoryReliability(s) * (shifted ? 0.5 : 1)
+    if (quiz && typeof pick === 'number') {
+      // 自己作答：答对就按原历史兑现；偏移后又没有新答案时，答对也只有一半把握
+      const ok = pick === quizAnswer(quiz, shifted) && (!shifted || quiz.shiftedAnswer !== undefined || rng() < 0.5)
+      check = { reliable: ok, via: 'quiz' }
+    } else {
+      const rate = memoryReliability(s) * (shifted ? 0.5 : 1) * (quiz ? INTUITION_RATE : 1)
+      check = { reliable: rng() < rate, via: quiz ? 'intuition' : 'dice' }
+    }
+    const reliable = check.reliable
     const wanted = reliable ? 'success' : 'misremember'
     const tagged = pool.filter((o) => o.tag === wanted)
     // 不可靠但没有写 misremember 时，退化为 fail，再退化为全部
@@ -214,7 +278,7 @@ export function resolveChoice(
     pool = pool.filter((o) => o.tag === undefined || o.tag === 'success' || o.tag === 'fail')
   }
   const outcome = weightedPick(pool, (o) => o.weight ?? 1, rng) ?? choice.outcomes[0]
-  return { outcome, reliable }
+  return { outcome, check }
 }
 
 export function pushLog(s: GameState, title: string, text: string, rarity?: GameEvent['rarity']): void {
@@ -253,7 +317,9 @@ export function settleYear(s: GameState): YearBill {
   if (independent) {
     add('生活开销', -(3 + (st.wealth > 100 ? st.wealth * 0.01 : 0)))
     if (!f.has('own-house')) add('房租', -2)
-    if (f.has('has-child')) add('养孩子', -3)
+    const childAge = relOf(s, 'childAge')
+    if (f.has('has-child') && (childAge < 0 || childAge < 22)) add(childAge >= 18 ? '孩子上大学' : '养孩子', childAge >= 18 ? -4 : -3)
+    if (s.rel.parentsLost < 2 && relOf(s, 'parentAge') >= 65) add(s.rel.parents < 40 ? '父母医药费' : '赡养父母', s.rel.parents < 40 ? -3 : -1)
     if (s.age >= 60) add('医疗', -(s.age - 55) * 0.2)
   }
   st.wealth += bill.income - bill.expense
@@ -268,8 +334,10 @@ export function settleYear(s: GameState): YearBill {
 export function joyBaseline(s: GameState): number {
   const f = s.flags
   let b = 50
-  if (f.has('married')) b += 12
-  else if (f.has('partner')) b += 8
+  // 有伴侣的加成取决于感情：感情好 ≈ +12，冷淡时只剩一半
+  const love = s.rel.partner || 70
+  if (f.has('married')) b += 4 + love * 0.12
+  else if (f.has('partner')) b += 2 + love * 0.09
   if (f.has('has-child')) b += 5
   if (f.has('own-house')) b += 4
   if (f.has('best-friend')) b += 4
@@ -286,6 +354,8 @@ export function yearlyDrift(s: GameState): void {
   if (s.age > 40) st.charm -= 1
   if (s.age > 60) st.intelligence -= 1
   if (s.age > 35) st.health -= (s.age - 35) * 0.12 * (s.flags.has('fit') ? 0.6 : 1)
+  // 记忆褪色：越往后越模糊，鼓励早用、敢用；写过“未来备忘录”的人褪得慢一半
+  if (s.age >= 10 && s.year <= MEMORY_END_YEAR) st.memory -= MEMORY_FADE * (s.flags.has('future-notebook') ? 0.5 : 1)
   // 名望会被淡忘、影响力需要经营：每年按比例回落，想维持就得持续投入
   st.fame -= st.fame * 0.06
   st.influence += influenceIncome(s) - st.influence * 0.05
@@ -312,9 +382,39 @@ export function mortality(age: number, health: number): number {
   return Math.min(1, 0.0008 * Math.exp(0.085 * (age - 30)) * hf)
 }
 
-/** 年度结算：自然变化、长一岁、死亡判定。返回 true 表示继续 */
+/**
+ * 亲人的年度变化：父母老去（离世时写入 parent-lost / parents-gone 标记，由事件接住），
+ * 感情不经营会慢慢变淡，伴侣也会老去（离世时写入 partner-lost），记录孩子的出生年份。
+ */
+export function relationsDrift(s: GameState, rng: Rng): void {
+  const r = s.rel
+  const f = s.flags
+  const pa = relOf(s, 'parentAge')
+  if (r.parentsLost < 2) {
+    if (pa > 55) r.parents = clamp(r.parents - (pa - 55) * 0.12, 0, 100)
+    const alive = 2 - r.parentsLost
+    for (let i = 0; i < alive; i++) {
+      if (rng() >= mortality(pa, r.parents)) continue
+      r.parentsLost += 1
+      f.add(r.parentsLost === 1 ? 'parent-lost' : 'parents-gone')
+    }
+  }
+  if (!f.has('partner') && !f.has('married')) r.partner = 0
+  else if (r.partner <= 0) r.partner = 70
+  else {
+    // 不经营就会变淡：每年 -2，过得开心少掉一点，过得很糟掉得更快
+    const h = s.stats.happiness
+    r.partner = clamp(r.partner - 2 + (h >= 75 ? 1 : 0) - (h < 35 ? 2 : 0), 1, 100)
+  }
+  // 伴侣与主角同龄，按同样的死亡率老去
+  if (f.has('married') && !f.has('partner-lost') && s.age >= 50 && rng() < mortality(s.age, 70)) f.add('partner-lost')
+  if (f.has('has-child') && !r.childBorn) r.childBorn = s.year
+}
+
+/** 年度结算：自然变化、亲人、长一岁、死亡判定。返回 true 表示继续 */
 export function endYear(s: GameState, rng: Rng = Math.random): boolean {
   yearlyDrift(s)
+  relationsDrift(s, rng)
   s.age += 1
   s.year += 1
   if (s.stats.health <= 0 || s.age >= s.maxAge || rng() < mortality(s.age, s.stats.health)) {
@@ -327,9 +427,11 @@ export function endYear(s: GameState, rng: Rng = Math.random): boolean {
 /** 结局六维评分（0-100），总分加权 */
 export function endingDims(s: GameState): Record<EndingDim, number> {
   const f = s.flags
+  const love = s.rel.partner || 70
   const family =
-    (f.has('married') ? 30 : f.has('partner') ? 15 : 0) + (f.has('has-child') ? 25 : 0) +
-    (f.has('best-friend') ? 15 : 0) + (f.has('parents-trust') ? 10 : 0) + (f.has('own-house') ? 10 : 0)
+    (f.has('married') ? 10 + love * 0.25 : f.has('partner') ? 15 : 0) + (f.has('has-child') ? 25 : 0) +
+    (f.has('best-friend') ? 15 : 0) + (f.has('parents-trust') ? 10 : 0) + (f.has('own-house') ? 10 : 0) +
+    (f.has('filial') ? 10 : 0) + (f.has('grandchild') ? 10 : 0)
   return {
     wealth: clamp(Math.log10(Math.max(1, s.stats.wealth)) * 12.5, 0, 100),
     influence: clamp(s.stats.influence, 0, 100),
@@ -352,10 +454,13 @@ export function headlinesFor(s: GameState, pool: Headline[], year = s.year): { t
     })
 }
 
-/** 世界线对比：到目前为止所有锚点新闻的“原历史 vs 你的世界” */
+/**
+ * 世界线对比：已经过去的锚点新闻“原历史 vs 你的世界”。
+ * 当年还没过完的锚点不显示（免得剧透预知题），已经被改写的除外。
+ */
 export function worldlineDiff(s: GameState, pool: Headline[]): { year: number; real: string; mine?: string }[] {
   return pool
-    .filter((h) => h.anchor && h.year <= s.year)
+    .filter((h) => h.anchor && (h.year < s.year || (h.year === s.year && h.anchor in s.altered)))
     .map((h) => ({ year: h.year, real: h.real, mine: h.anchor! in s.altered ? h.altered : undefined }))
 }
 
@@ -385,7 +490,7 @@ export function computeEnding(s: GameState, headlines: Headline[] = []): Ending 
     [s.age >= 100, '百岁人瑞'],
     [w < 0, '负债人生'],
     [s.age < 50, '英年早逝'],
-    [f.has('married') && f.has('has-child') && dims.joy >= 60, '儿孙满堂'],
+    [(f.has('grandchild') && dims.joy >= 55) || (f.has('married') && f.has('has-child') && dims.joy >= 60), '儿孙满堂'],
     [lonely && s.stats.fame >= 30, '孤独的先知'],
     [dims.joy >= 72, '知足常乐'],
     [w >= 500, '小富即安'],

@@ -156,3 +156,13 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, 
 .paper { width: 100%; max-width: 420px; margin: 12px auto; background: #f3ecd8; color: #2a2418; border-radius: 6px; padding: 12px 16px; text-align: left; }
 .paper-head { font-weight: bold; font-size: 18px; border-bottom: 2px solid #2a2418; padding-bottom: 6px; margin-bottom: 8px; text-align: center; letter-spacing: 2px; }
 .paper p { margin: 6px 0; font-size: 14px; line-height: 1.5; }
+
+/* 预知答题 */
+.quiz .choice.out { opacity:.35; text-decoration:line-through; cursor:not-allowed; transform:none; }
+.quiz .choice.flash { border-color:var(--gold); box-shadow:0 0 12px var(--gold); animation:flash 1.2s ease-in-out infinite alternate; }
+@keyframes flash { from { box-shadow:0 0 4px var(--gold); } to { box-shadow:0 0 16px var(--gold); } }
+
+/* 侧栏：家人 */
+.family { margin-top:10px; font-size:13px; color:var(--muted); }
+.family p { margin:2px 0; }
+@media (max-width: 720px) { .family { margin-top:4px; font-size:11px; display:flex; flex-wrap:wrap; gap:0 10px; } }

@@ -20,6 +20,25 @@ describe('整局模拟', () => {
   })
 })
 
+describe('亲人与晚年（P5）', () => {
+  it('里程碑事件一局最多一次；活得够久的人大多会送走父母', async () => {
+    const once = /^(family-kid-|family-parent-farewell|family-parents-gone|family-widowed|later-crossroads|later-retire-party|later-80-birthday)/
+    let long = 0, lost = 0
+    for (let i = 0; i < 80; i++) {
+      const { origin, talents } = drawStart()
+      const count: Record<string, number> = {}
+      const host: Host = {
+        ...autoHost,
+        async showChoice(e, choices) { count[e.id] = (count[e.id] ?? 0) + 1; return choices[0] },
+      }
+      const { state } = await runGame(origin, talents, host)
+      for (const [id, n] of Object.entries(count)) if (once.test(id)) expect(n, id).toBe(1)
+      if (state.age >= 65) { long++; if (state.rel.parentsLost > 0) lost++ }
+    }
+    expect(lost).toBeGreaterThan(long * 0.8)
+  }, 60000)
+})
+
 describe('AI 主线默认走向', () => {
   it('玩家不干预时，closeai 先破产，国产模型随后洗牌', async () => {
     const at: Record<string, number[]> = { close: [], cn: [] }

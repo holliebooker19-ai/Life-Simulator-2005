@@ -1,3 +1,4 @@
+import { newState } from './engine'
 import type { GameState } from './types'
 
 /** 存档：每年年初自动保存到 localStorage，刷新页面后可以“继续上一局”。 */
@@ -16,7 +17,9 @@ export function deserialize(raw: string): GameState | null {
   try {
     const { v, data } = JSON.parse(raw) as { v: number; data: Saved }
     if (v !== VERSION || !data) return null
-    return { ...data, flags: new Set(data.flags), seen: new Set(data.seen) }
+    // 新版本加的字段（world、rel 等）在旧存档里没有：用新开局的默认值补齐
+    const base = newState()
+    return { ...base, ...data, rel: { ...base.rel, ...data.rel }, flags: new Set(data.flags), seen: new Set(data.seen) }
   } catch {
     return null
   }

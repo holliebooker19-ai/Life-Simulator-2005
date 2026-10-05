@@ -35,12 +35,14 @@
 8. 不要在 `engine.ts` 里写具体事件内容；内容只放 `src/data/`。
 
 ## 核心机制（改动前要理解）
-- **记忆**：`usesMemory` 的选项按 `memoryReliability` 判定成败；世界线偏离度越高越不可靠；2026 年之后预知失效。
+- **记忆与预知答题（DESIGN_V2 P2）**：`usesMemory` 的选项会弹出预知题（`Choice.quiz` / `GameEvent.quiz` / 题库 `src/data/quizzes.ts`），答对走 `success`、答错走 `misremember`；记忆属性只负责提示（划掉错误选项、闪回），“交给直觉”按 `memoryReliability` 掷骰并打折。没有题目的预知选项仍按旧的掷骰判定。记忆每年褪色；世界线偏离度越高越不可靠；2026 年之后预知失效。2026 年前带预知选项的现实事件必须有题目（测试会检查）。
 - **世界线原则**：世界按真实历史走，**只有主角的个人影响才会让它偏离**。带 `year` 的现实事件永远按真实历史触发；玩家个人的赚钱/成名/人脉**不产生偏离**。只有明确“改写某个历史锚点”（`Effects.alter`，锚点 = 事件 id）才会偏离。
 - **世界线偏离度**：派生值 = 所有被改写锚点的 `scale` 之和（上限 100），不能直接写。偏离越高，现实记忆越不可靠；2026 年之后预知失效。改写后的版本用 `Condition.altered / notAltered` 区分。影响力和偏离度双高时触发改写世界线的事件与结局。
 - **年龄限制**：主角 1998 年出生，2005 年 7 岁，2013 年 15 岁，2026 年 28 岁。游戏重点年份是 2005 年起；15 岁前的现实事件需要“父母代理”（`parents-trust`、`family-has-money` 等标记）才能参与，写事件时要考虑主角当时的年龄是否合理。
 - **节奏**：`engine.ts` 的 `pacing()` 决定各年龄段的随机事件数、行动点、自由发挥选项数。0–6 岁为襁褓期（无行动菜单、结果自动继续），调节奏只改这张表。
 - **写实人生（DESIGN_V2 P1）**：属性上限 100（财富不限）；每年 `yearlyDrift` 让快乐回落到 `joyBaseline`，名望（6%/年）和影响力（5%/年）回落，并按财富、名望、公司、基金会自然获得影响力（`influenceIncome`），35 岁后体质下降；`settleYear` 结算年度账单（18 岁起）；死亡按 `mortality(年龄, 体质)` 概率判定，寿命上限 `state.maxAge`（默认 100，科技树可以提高）；每年最多 `MAX_FIXED_PER_YEAR = 4` 个固定事件，按稀有度取舍。
 - **世界状态与科技树（DESIGN_V2 P3）**：`state.world` 记录世界变量（登记在 `src/data/world.ts`，新变量必须登记）。事件用 `Effects.world` 修改它、用 `Condition.worldMin/worldMax` 读取它；`Effects.maxAge` 用于延寿；`variants` 按世界状态换正文；`annual: true` 的事件每年满足条件就触发（用于世界的默认走向，如 AI 行业年报）；`dependsOn` 依赖的锚点被改写后，事件标注“偏移”，预知可靠度减半。每年的新闻在 `src/data/headlines.ts`，可改写的锚点（2026 年前）必须有带 `altered` 的新闻（测试会检查）。
+- **亲人（DESIGN_V2 P5）**：`state.rel` 记录父母身体与离世人数、伴侣感情、孩子出生年份；事件用 `relMin/relMax`（含派生的 `parentAge`、`childAge`）读取、`Effects.rel` 修改。父母离世、伴侣离世由引擎写入标记（`parent-lost` / `parents-gone` / `partner-lost`），由 `events/family.ts` 的事件接住。
+- **新闻在年底显示**（“年度新闻”），避免剧透当年的预知题。
 - **设计总纲**：`docs/DESIGN_V2.md`（爽点三阶段、答题预知、世界线、AI 公司主线、实施进度）。
 - **并行**：多个会话同时写内容时，遵守 `docs/PARALLEL.md`（各写各的新文件，不改引擎/UI/类型/已有事件）。

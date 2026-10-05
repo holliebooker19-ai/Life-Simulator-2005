@@ -1,3 +1,4 @@
+import { artEl, eventBanner, heroSvg } from './art'
 import { formatWealth } from './engine'
 import { drawStart, runGame, type Host } from './game'
 import { renderShareImage } from './share'
@@ -18,8 +19,8 @@ let speed = 1
 
 export function showTitle(): void {
   app.replaceChildren()
-  const box = h('div', 'screen center')
-  box.append(h('h1', 'title', '1998重生'), h('p', 'sub', '带着 2026 年的记忆，回到 1998 年出生的那一天。'))
+  const box = h('div', 'screen center hero')
+  box.append(artEl(heroSvg(), 'hero-art'), h('h1', 'title', '1998重生'), h('p', 'sub', '带着 2026 年的记忆，回到 1998 年出生的那一天。'))
   const btn = h('button', 'btn big', '开始重生')
   btn.onclick = showDraw
   box.append(btn)
@@ -128,7 +129,7 @@ async function startGame(origin: Origin, talents: Talent[]): Promise<void> {
     },
     async showChoice(ev, choices, s) {
       const wrapEv = h('div', `event ${ev.rarity ?? 'common'}`)
-      wrapEv.append(h('h3', '', `${s.year}（${s.age}岁）${ev.title}`), h('p', '', ev.text))
+      wrapEv.append(artEl(eventBanner(ev.category), 'banner'), h('h3', '', `${s.year}（${s.age}岁）${ev.title}`), h('p', '', ev.text))
       stage.replaceChildren(wrapEv)
       return new Promise<Choice>((res) => {
         choices.forEach((c) => {

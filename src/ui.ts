@@ -2,7 +2,7 @@ import { artEl, eventBanner, heroSvg } from './art'
 import { formatWealth } from './engine'
 import { drawStart, runGame, type Host } from './game'
 import { renderShareImage } from './share'
-import type { Choice, GameEvent, GameState, Origin, Outcome, Rarity, StatKey, Talent } from './types'
+import type { ActionGroup, Choice, GameAction, GameEvent, GameState, Origin, Outcome, Rarity, StatKey, Talent } from './types'
 
 const app = document.getElementById('app')!
 
@@ -14,6 +14,12 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): 
 }
 
 const RARITY_LABEL: Record<Rarity, string> = { common: '普通', rare: '稀有', legendary: '传说' }
+const GROUP_LABEL: Record<ActionGroup, string> = {
+  study: '学习', body: '身体', social: '社交', work: '工作', money: '理财', explore: '探索', life: '生活',
+}
+const GROUP_ORDER = Object.keys(GROUP_LABEL) as ActionGroup[]
+/** 日志里最近多少条保持展开，更早的折叠成标题 */
+const LOG_OPEN = 4
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 let speed = 1
 
@@ -63,21 +69,23 @@ async function startGame(origin: Origin, talents: Talent[]): Promise<void> {
   const panel = h('aside', 'panel')
   const main = h('main', 'main')
   const header = h('div', 'year', '1998 · 0岁')
+  const spd = h('button', 'btn small', '加速：关')
+  spd.onclick = () => { speed = speed === 1 ? 4 : 1; spd.textContent = `加速：${speed === 1 ? '关' : '开'}` }
+  const top = h('div', 'panel-top')
+  top.append(header, spd)
   const divWrap = h('div', 'diverge')
   const divBar = h('div', 'diverge-bar')
   divWrap.append(h('span', '', '世界线偏离度'), divBar)
   const values = new Map<StatKey, HTMLElement>()
-  panel.append(header, divWrap)
+  const grid = h('div', 'stats')
   for (const [k, label] of STAT_LABELS) {
     const row = h('div', 'stat')
     const v = h('b', '', '0')
     values.set(k, v)
     row.append(h('span', '', label), v)
-    panel.append(row)
+    grid.append(row)
   }
-  const spd = h('button', 'btn small', '加速：关')
-  spd.onclick = () => { speed = speed === 1 ? 4 : 1; spd.textContent = `加速：${speed === 1 ? '关' : '开'}` }
-  panel.append(spd)
+  panel.append(top, divWrap, grid)
   const log = h('div', 'log')
   const stage = h('div', 'stage')
   main.append(log, stage)
@@ -111,20 +119,28 @@ async function startGame(origin: Origin, talents: Talent[]): Promise<void> {
   const addLog = (s: GameState, ev: GameEvent, extra: string) => {
     const line = h('div', `log-line ${ev.rarity ?? 'common'}`)
     line.append(h('b', '', `${s.year}（${s.age}岁）${ev.title}`), h('p', '', extra))
+    line.onclick = () => line.classList.toggle('open')
     log.append(line)
-    log.scrollTop = log.scrollHeight
+    // 较早的记录折叠成标题，点一下可展开，避免历史把当前选项挤出屏幕
+    log.querySelectorAll('.log-line').forEach((el, i, all) => el.classList.toggle('old', i < all.length - LOG_OPEN))
     sync(s)
   }
+  /** 让当前舞台内容进入视野：内容比屏幕高就对齐顶部（先读题），否则对齐底部 */
+  const reveal = () => requestAnimationFrame(() => {
+    stage.scrollIntoView({ behavior: 'smooth', block: stage.offsetHeight > main.clientHeight * 0.8 ? 'start' : 'end' })
+  })
   const waitClick = (label: string) => new Promise<void>((res) => {
     const b = h('button', 'btn', label)
     b.onclick = () => { b.remove(); res() }
     stage.replaceChildren(b)
+    reveal()
   })
 
   const host: Host = {
     onYear: sync,
     async showAuto(ev, s) {
       addLog(s, ev, ev.text)
+      reveal()
       await sleep(900 / speed)
     },
     async showChoice(ev, choices, s) {
@@ -135,10 +151,47 @@ async function startGame(origin: Origin, talents: Talent[]): Promise<void> {
         choices.forEach((c) => {
           const b = h('button', 'btn choice', c.text)
           if (c.usesMemory) b.append(h('span', 'tag', '利用记忆'))
+          if (c.free) b.append(h('span', 'tag free', '自由发挥'))
           b.onclick = () => { stage.replaceChildren(); res(c) }
           wrapEv.append(b)
         })
+        reveal()
       })
+    },
+    async showActions(s, actions, points) {
+      const box = h('div', 'event actions')
+      box.append(
+        h('h3', '', `${s.year}（${s.age}岁）这一年，你想做什么？`),
+        h('p', 'muted', `还能行动 ${points} 次。选一件事，或者顺其自然。`),
+      )
+      const tabs = h('div', 'tabs')
+      const list = h('div', 'action-list')
+      const groups = GROUP_ORDER.filter((g) => actions.some((a) => a.group === g))
+      let active = groups[0]
+      const render = () => {
+        tabs.replaceChildren(...groups.map((g) => {
+          const t = h('button', `tab${g === active ? ' on' : ''}`, GROUP_LABEL[g])
+          t.onclick = () => { active = g; render() }
+          return t
+        }))
+        list.replaceChildren(...actions.filter((a) => a.group === active).map((a) => {
+          const b = h('button', 'btn choice action')
+          b.append(h('span', 'a-t', a.text))
+          if (a.usesMemory) b.append(h('span', 'tag', '利用记忆'))
+          if (a.hint) b.append(h('span', 'a-h', a.hint))
+          b.onclick = () => { stage.replaceChildren(); resolve(a) }
+          return b
+        }))
+      }
+      let resolve: (a: GameAction | null) => void = () => {}
+      const p = new Promise<GameAction | null>((res) => { resolve = res })
+      const skip = h('button', 'btn choice skip', '顺其自然，进入下一年')
+      skip.onclick = () => { stage.replaceChildren(); resolve(null) }
+      render()
+      box.append(tabs, list, skip)
+      stage.replaceChildren(box)
+      reveal()
+      return p
     },
     async showOutcome(ev, outcome: Outcome, reliable, s) {
       const note = reliable === false ? '（记忆出现偏差！）' : ''

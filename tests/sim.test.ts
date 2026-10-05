@@ -5,6 +5,7 @@ const autoHost: Host = {
   onYear() {},
   async showAuto() {},
   async showChoice(_e, choices) { return choices[choices.length - 1] },
+  async showActions(_s, actions) { return actions[Math.floor(Math.random() * actions.length)] ?? null },
   async showOutcome() {},
 }
 

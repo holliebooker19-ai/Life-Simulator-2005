@@ -28,3 +28,8 @@
 2. 写事件，注册到 `index.ts`。
 3. 运行 `npm run typecheck && npm test && npm run build`（`tests/events.test.ts` 会自动检查 id 唯一、选项完整、真名黑名单）。
 4. PR 描述里列出新增事件数量、涉及的现实事实与出处。
+
+## 自由行动与自由发挥选项
+- `src/data/actions.ts`：每年的自由行动（学习/身体/社交/工作/理财/探索/生活），行动点随年龄 1→2→3。写法与选项相同（`outcomes`、`usesMemory`、`requires`），另有 `group`、`hint`、`once`（一局一次）、`cooldown`（冷却年数）。`Condition` 新增 `minYear/maxYear`。
+- `src/data/extra-choices.ts`：通用“自由发挥”选项，引擎会随机追加 2 个到每个带选项的事件后面，文案不得指向具体事件。
+- 行动写入的标记（`skill-coding`、`employed`、`partner`、`married`、`has-business` 等）见 `actions.ts` 文件头，事件可用它们做分岔。

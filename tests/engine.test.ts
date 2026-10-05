@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { memoryReliability, newState, resolveChoice, applyEffects, endYear } from '../src/engine'
+import { actionPoints, applyEffects, endYear, meets, memoryReliability, newState, resolveChoice } from '../src/engine'
 
 describe('engine', () => {
   it('偏离度越高，记忆越不可靠', () => {
@@ -31,5 +31,21 @@ describe('engine', () => {
     applyEffects(s, { stats: { health: -999 } })
     expect(endYear(s)).toBe(false)
     expect(s.alive).toBe(false)
+  })
+})
+
+describe('年份条件与行动点', () => {
+  it('minYear / maxYear 限制可用年份', () => {
+    const s = newState(); s.year = 2010
+    expect(meets(s, { minYear: 2006, maxYear: 2026 })).toBe(true)
+    expect(meets(s, { minYear: 2012 })).toBe(false)
+    expect(meets(s, { maxYear: 2005 })).toBe(false)
+  })
+
+  it('行动点随年龄增加', () => {
+    const s = newState()
+    s.age = 3; expect(actionPoints(s)).toBe(1)
+    s.age = 10; expect(actionPoints(s)).toBe(2)
+    s.age = 25; expect(actionPoints(s)).toBe(3)
   })
 })

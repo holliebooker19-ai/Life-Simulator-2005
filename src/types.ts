@@ -27,6 +27,9 @@ export interface Effects {
 export interface Condition {
   minAge?: number
   maxAge?: number
+  /** 现实年份范围（用于只在某段历史里可做的行动） */
+  minYear?: number
+  maxYear?: number
   /** 属性下限 / 上限 */
   statMin?: StatDelta
   statMax?: StatDelta
@@ -57,8 +60,24 @@ export interface Choice {
    * 不可靠时走 outcomes 中 tag 为 'misremember' 的结果（如有）。
    */
   usesMemory?: boolean
+  /** 通用“自由发挥”选项（由引擎追加到事件里，UI 会特别标注） */
+  free?: boolean
   /** 结果列表，按权重随机；只有一个即为确定结果 */
   outcomes: (Outcome & { tag?: 'success' | 'fail' | 'misremember' })[]
+}
+
+export type ActionGroup = 'study' | 'body' | 'social' | 'work' | 'money' | 'explore' | 'life'
+
+/** 每年可自由选择的“行动”，不依赖事件触发，是玩家主动权的主要来源 */
+export interface GameAction extends Choice {
+  id: string
+  group: ActionGroup
+  /** 按钮下方的一句话提示 */
+  hint?: string
+  /** 一局只能做一次 */
+  once?: boolean
+  /** 做完后隔多少年才能再做，默认 0 */
+  cooldown?: number
 }
 
 export type Rarity = 'common' | 'rare' | 'legendary'
@@ -111,6 +130,8 @@ export interface GameState {
   divergence: Divergence
   flags: Set<string>
   seen: Set<string>
+  /** 行动上次执行的年份，用于冷却 */
+  lastDone: Record<string, number>
   talents: Talent[]
   origin: Origin | null
   log: LogEntry[]

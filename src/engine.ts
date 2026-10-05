@@ -1,5 +1,5 @@
 import type {
-  Choice, Condition, Effects, Ending, GameEvent, GameState, Origin, Outcome, Stats, StatKey, Talent,
+  Choice, GameAction, Condition, Effects, Ending, GameEvent, GameState, Origin, Outcome, Stats, StatKey, Talent,
 } from './types'
 import { weightedPick, type Rng } from './rng'
 
@@ -17,6 +17,7 @@ export function newState(): GameState {
     divergence: 0,
     flags: new Set(),
     seen: new Set(),
+    lastDone: {},
     talents: [],
     origin: null,
     log: [],
@@ -45,6 +46,8 @@ export function meets(s: GameState, c?: Condition): boolean {
   if (!c) return true
   if (c.minAge !== undefined && s.age < c.minAge) return false
   if (c.maxAge !== undefined && s.age > c.maxAge) return false
+  if (c.minYear !== undefined && s.year < c.minYear) return false
+  if (c.maxYear !== undefined && s.year > c.maxYear) return false
   if (c.divergenceMin !== undefined && s.divergence < c.divergenceMin) return false
   if (c.divergenceMax !== undefined && s.divergence > c.divergenceMax) return false
   for (const k of Object.keys(c.statMin ?? {}) as StatKey[]) if (s.stats[k] < (c.statMin![k] ?? 0)) return false
@@ -77,6 +80,37 @@ export function pickEvents(s: GameState, pool: GameEvent[], rng: Rng, maxRandom 
 function eventWeight(e: GameEvent): number {
   const base = e.weight ?? 10
   return e.rarity === 'legendary' ? base * 0.2 : e.rarity === 'rare' ? base * 0.5 : base
+}
+
+/** 每年可用的行动点数：小时候少，成年后多 */
+export function actionPoints(s: GameState): number {
+  return s.age < 6 ? 1 : s.age < 18 ? 2 : 3
+}
+
+/** 当前能做的行动：满足条件、未超出“一次性”与冷却限制 */
+export function availableActions(s: GameState, pool: GameAction[]): GameAction[] {
+  return pool.filter((a) => {
+    if (!meets(s, a.requires)) return false
+    if (a.once && s.seen.has(a.id)) return false
+    const last = s.lastDone[a.id]
+    return !(a.cooldown && last !== undefined && s.year - last <= a.cooldown)
+  })
+}
+
+export function markAction(s: GameState, a: GameAction): void {
+  s.seen.add(a.id)
+  s.lastDone[a.id] = s.year
+}
+
+/** 给带选项的事件追加通用“自由发挥”选项，最多 count 个，让玩家不止被作者预设的路线困住 */
+export function withExtraChoices(s: GameState, choices: Choice[], extras: Choice[], rng: Rng, count = 2): Choice[] {
+  const pool = extras.filter((c) => meets(s, c.requires))
+  const picked: Choice[] = []
+  for (let i = 0; i < count; i++) {
+    const p = weightedPick(pool.filter((c) => !picked.includes(c)), () => 1, rng)
+    if (p) picked.push(p)
+  }
+  return [...choices, ...picked]
 }
 
 /** 预知类选项的“记忆可靠”概率：记忆越清晰、世界线偏离越小越可靠 */

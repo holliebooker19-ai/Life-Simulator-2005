@@ -125,3 +125,13 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, 
 @media (max-width:720px) { .banner.has-img { max-height:110px; } }
 .draw .cards .card { padding:10px 14px; }
 .draw .card-n { margin:2px 0; }
+/* 抽卡：手机上纵向紧凑排列（文字在左，重抽在右） */
+@media (max-width:720px) {
+  .draw .cards { display:grid; grid-template-columns:1fr; gap:8px; }
+  .draw .cards .card { display:grid; grid-template-columns:1fr auto; align-items:center; column-gap:10px; padding:8px 12px; }
+  .draw .cards .card > * { grid-column:1; }
+  .draw .cards .card .reroll { grid-column:2; grid-row:1 / span 3; margin:0; padding:6px 10px; font-size:12px; }
+  .draw .card-r { font-size:11px; }
+  .draw .card-n { font-size:15px; }
+  .draw .card-d { font-size:12px; line-height:1.4; }
+}

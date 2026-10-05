@@ -62,3 +62,32 @@ describe('节奏 pacing', () => {
     expect(pacing(s)).toMatchObject({ actionPoints: 2, extraChoices: 2, autoAdvance: false })
   })
 })
+
+describe('世界线：只有改写锚点才产生偏离', () => {
+  it('个人收益不改变偏离度，也不降低记忆可靠度', () => {
+    const s = newState(); s.year = 2010; s.stats.memory = 80
+    const before = memoryReliability(s)
+    applyEffects(s, { stats: { wealth: 500, fame: 10, influence: 5 } })
+    expect(s.divergence).toBe(0)
+    expect(memoryReliability(s)).toBe(before)
+  })
+
+  it('alter 记录被改写的锚点，偏离度为 scale 之和，重复改写取较大值', () => {
+    const s = newState()
+    applyEffects(s, { alter: [{ id: 'a', scale: 10 }] })
+    applyEffects(s, { alter: [{ id: 'b', scale: 15 }, { id: 'a', scale: 5 }] })
+    expect(s.altered).toEqual({ a: 10, b: 15 })
+    expect(s.divergence).toBe(25)
+    applyEffects(s, { alter: [{ id: 'c', scale: 99 }] })
+    expect(s.divergence).toBe(100)
+  })
+
+  it('altered / notAltered 条件区分“改写后”与“真实”版本', () => {
+    const s = newState()
+    expect(meets(s, { notAltered: ['a'] })).toBe(true)
+    expect(meets(s, { altered: ['a'] })).toBe(false)
+    applyEffects(s, { alter: [{ id: 'a', scale: 3 }] })
+    expect(meets(s, { notAltered: ['a'] })).toBe(false)
+    expect(meets(s, { altered: ['a'] })).toBe(true)
+  })
+})

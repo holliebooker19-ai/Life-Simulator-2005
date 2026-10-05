@@ -55,6 +55,26 @@ describe('events', () => {
     }
   })
 
+  it('没有 year 的随机事件，正文提到具体年份时必须限定 minYear（避免现实内容出现在错误年份）', () => {
+    for (const e of ALL_EVENTS) {
+      if (e.year !== undefined) continue
+      if (/(19|20)\d\d\s*年/.test(`${e.text}${JSON.stringify(e.choices ?? [])}`)) {
+        expect(e.requires?.minYear, `${e.id}: 随机事件提到了具体年份，请改成固定年份事件或加 minYear`).toBeDefined()
+      }
+    }
+  })
+
+  it('alter 必须指向存在的事件 id', () => {
+    const ids = new Set(ALL_EVENTS.map((e) => e.id))
+    for (const e of ALL_EVENTS) {
+      for (const c of e.choices ?? []) for (const o of c.outcomes) for (const a of o.effects?.alter ?? []) {
+        expect(ids.has(a.id), `${e.id}: alter 的锚点 ${a.id} 不存在`).toBe(true)
+        expect(a.scale, e.id).toBeGreaterThan(0)
+        expect(a.scale, e.id).toBeLessThanOrEqual(25)
+      }
+    }
+  })
+
   it('涉及现实年份的事件必须有 realFact', () => {
     for (const e of ALL_EVENTS) if (e.year !== undefined) expect(e.realFact, e.id).toBeTruthy()
   })

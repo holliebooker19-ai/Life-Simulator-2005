@@ -59,7 +59,7 @@ export const workActions: GameAction[] = [
     outcomes: [
       { weight: 3, tag: 'fail', text: '创业比想象中难得多，你在一年内烧光了启动资金，只留下一身经验。', effects: { stats: { wealth: -30, intelligence: 4, happiness: -6, charm: 1 } } },
       { weight: 2, tag: 'success', text: '你的小公司站稳了脚跟，开始稳定盈利。', effects: { stats: { wealth: 40, fame: 4, influence: 4 }, addFlags: ['has-business'] } },
-      { weight: 1, tag: 'success', text: '赶上了好风口，你的公司快速膨胀，成了圈子里的明星创业者。', effects: { stats: { wealth: 200, fame: 12, influence: 10 }, addFlags: ['has-business'], divergence: 3 } },
+      { weight: 1, tag: 'success', text: '赶上了好风口，你的公司快速膨胀，成了圈子里的明星创业者。', effects: { stats: { wealth: 200, fame: 12, influence: 10 }, addFlags: ['has-business'] } },
     ],
   },
   {

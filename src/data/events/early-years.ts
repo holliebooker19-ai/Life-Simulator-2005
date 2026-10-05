@@ -26,7 +26,7 @@ export const earlyYearsEvents: GameEvent[] = [
         text: '冲着电视上的蓝色球衣咯咯直笑',
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸爸乐了：“儿子押法国！”还真跟着押了。第二天他拎回一条烟，逢人就夸你有眼光。', effects: { stats: { wealth: 0.02, happiness: 3 }, divergence: 1 } },
+          { tag: 'success', text: '爸爸乐了：“儿子押法国！”还真跟着押了。第二天他拎回一条烟，逢人就夸你有眼光。', effects: { stats: { wealth: 0.02, happiness: 3 } } },
           { tag: 'misremember', text: '你记混了球衣颜色，冲着黄衣服的巴西乱挥手。爸爸押了巴西，输了一条烟。', effects: { stats: { wealth: -0.02 } } },
         ],
       },
@@ -47,7 +47,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['parents-trust'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸爸被你哭得心软，婉拒了老同学。没过多久那个网站就关了门，入股的人血本无归。爸爸摸着你的头说：“福星。”', effects: { stats: { wealth: 2, influence: 2 }, divergence: 1 } },
+          { tag: 'success', text: '爸爸被你哭得心软，婉拒了老同学。没过多久那个网站就关了门，入股的人血本无归。爸爸摸着你的头说：“福星。”', effects: { stats: { wealth: 2, influence: 2 } } },
           { tag: 'misremember', text: '你把十年后互联网的辉煌和眼下的泡沫记串了，反而拍手喊“要！”。爸爸投了一笔，很快就打了水漂。', effects: { stats: { wealth: -3, happiness: -3 } } },
         ],
       },
@@ -56,7 +56,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['family-has-money'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '你天天念叨“卖掉卖掉”，爸妈被念烦了，索性清了仓。后来网络股一路暴跌，他们越想越后怕。', effects: { stats: { wealth: 10, influence: 2 }, divergence: 2 } },
+          { tag: 'success', text: '你天天念叨“卖掉卖掉”，爸妈被念烦了，索性清了仓。后来网络股一路暴跌，他们越想越后怕。', effects: { stats: { wealth: 10, influence: 2 } } },
           { tag: 'misremember', text: '你记错了泡沫破裂的时间，催得太早。爸妈卖完它又涨了一大截，后悔了好一阵。', effects: { stats: { wealth: -2, happiness: -2 } } },
         ],
       },
@@ -84,7 +84,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['parents-trust'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸妈被你的严肃吓了一跳，最后真没进场。之后股市一路阴跌，同事们几乎个个被套，只有你家毫发无伤。', effects: { stats: { wealth: 3, influence: 3 }, divergence: 2 } },
+          { tag: 'success', text: '爸妈被你的严肃吓了一跳，最后真没进场。之后股市一路阴跌，同事们几乎个个被套，只有你家毫发无伤。', effects: { stats: { wealth: 3, influence: 3 } } },
           { tag: 'misremember', text: '你把几年后的大牛市记串了年份，反而催他们“快买”。全家的存款就这样站在了山顶上。', effects: { stats: { wealth: -6, happiness: -5 }, addFlags: ['family-stock-trapped'] } },
         ],
       },
@@ -93,7 +93,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['family-has-money'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸妈拗不过你，半开玩笑地清了仓。几个月后周围的人都在割肉，你家却多出一笔能周转的现金。', effects: { stats: { wealth: 12, influence: 3 }, divergence: 2 } },
+          { tag: 'success', text: '爸妈拗不过你，半开玩笑地清了仓。几个月后周围的人都在割肉，你家却多出一笔能周转的现金。', effects: { stats: { wealth: 12, influence: 3 } } },
           { tag: 'misremember', text: '你记错了月份，喊得太早。爸妈卖完眼看着又涨了一段，忍不住追了回去，正好追在最高点。', effects: { stats: { wealth: -10, happiness: -5 }, addFlags: ['family-stock-trapped'] } },
         ],
       },
@@ -120,7 +120,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['parents-trust'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '国足真的 1:0 赢了。爸爸赢了邻居一顿酒，抱着你在楼道里转圈。', effects: { stats: { wealth: 0.02, happiness: 6, influence: 1 }, divergence: 1 } },
+          { tag: 'success', text: '国足真的 1:0 赢了。爸爸赢了邻居一顿酒，抱着你在楼道里转圈。', effects: { stats: { wealth: 0.02, happiness: 6, influence: 1 } } },
           { tag: 'misremember', text: '你把这一届和后来几届的失利记混了，喊了句“不能”。爸爸押了反方，输了一顿酒，还被邻居笑了半年。', effects: { stats: { wealth: -0.02, happiness: -2 } } },
         ],
       },
@@ -142,7 +142,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['parents-trust'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸爸照着填了，同事们笑他扫兴。一个月后，他成了全单位唯一猜中的人，捧回了奖品和一点奖金。', effects: { stats: { wealth: 1, influence: 2, fame: 1 }, divergence: 1 } },
+          { tag: 'success', text: '爸爸照着填了，同事们笑他扫兴。一个月后，他成了全单位唯一猜中的人，捧回了奖品和一点奖金。', effects: { stats: { wealth: 1, influence: 2, fame: 1 } } },
           { tag: 'misremember', text: '你把决赛记成了另一届，说冠军是德国。爸爸的竞猜单作废，还被同事调侃“听孩子的”。', effects: { stats: { happiness: -2 } } },
         ],
       },
@@ -151,7 +151,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['family-has-money'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸爸半信半疑地押了巴西。决赛巴西 2:0 胜德国，那几个生意伙伴从此对你家刮目相看。', effects: { stats: { wealth: 8, influence: 3 }, divergence: 2 } },
+          { tag: 'success', text: '爸爸半信半疑地押了巴西。决赛巴西 2:0 胜德国，那几个生意伙伴从此对你家刮目相看。', effects: { stats: { wealth: 8, influence: 3 } } },
           { tag: 'misremember', text: '你记错了巴西走到哪一轮，让爸爸押了别的队。输掉的钱够买一台大彩电。', effects: { stats: { wealth: -6, happiness: -3 } } },
         ],
       },
@@ -172,7 +172,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['parents-trust'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸妈没跟风囤货，全家规规矩矩地洗手通风。夏天一到风波果然过去，家里没多花一分冤枉钱。', effects: { stats: { health: 5, influence: 2 }, divergence: 1 } },
+          { tag: 'success', text: '爸妈没跟风囤货，全家规规矩矩地洗手通风。夏天一到风波果然过去，家里没多花一分冤枉钱。', effects: { stats: { health: 5, influence: 2 } } },
           { tag: 'misremember', text: '你记不清哪里最严重、什么时候结束，说着说着自己先慌了。爸妈被你吓得囤了一屋子白醋。', effects: { stats: { wealth: -0.5, happiness: -3 } } },
         ],
       },
@@ -181,7 +181,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['family-has-money'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '你家赶在涨价前进了货，转手赚了一笔。可街坊们都知道是你家在卖高价货，背后没少说闲话。', effects: { stats: { wealth: 6, charm: -5, happiness: -2 }, divergence: 1 } },
+          { tag: 'success', text: '你家赶在涨价前进了货，转手赚了一笔。可街坊们都知道是你家在卖高价货，背后没少说闲话。', effects: { stats: { wealth: 6, charm: -5, happiness: -2 } } },
           { tag: 'misremember', text: '你记错了时间，货进得太晚，价格早已回落，一屋子白醋和口罩砸在了手里。', effects: { stats: { wealth: -4, happiness: -2 } } },
         ],
       },
@@ -203,7 +203,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['parents-trust'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸妈拗不过你，咬牙交了首付。房贷压得全家紧巴巴的，但你知道，这是这一世家里最划算的一笔账。', effects: { stats: { wealth: -3, happiness: -2, influence: 2 }, divergence: 2, addFlags: ['family-bought-house'] } },
+          { tag: 'success', text: '爸妈拗不过你，咬牙交了首付。房贷压得全家紧巴巴的，但你知道，这是这一世家里最划算的一笔账。', effects: { stats: { wealth: -3, happiness: -2, influence: 2 }, addFlags: ['family-bought-house'] } },
           { tag: 'misremember', text: '你记错了这座城市往哪边发展，闹着买下的这片新区，往后很多年都没什么起色。', effects: { stats: { wealth: -6, happiness: -3 } } },
         ],
       },
@@ -212,7 +212,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['family-has-money'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸妈笑你人小鬼大，还是一口气买了两套。首付掏空了家底，亲戚们都说他们疯了。', effects: { stats: { wealth: -8, happiness: -3, influence: 3 }, divergence: 3, addFlags: ['family-bought-house', 'family-two-houses'] } },
+          { tag: 'success', text: '爸妈笑你人小鬼大，还是一口气买了两套。首付掏空了家底，亲戚们都说他们疯了。', effects: { stats: { wealth: -8, happiness: -3, influence: 3 }, addFlags: ['family-bought-house', 'family-two-houses'] } },
           { tag: 'misremember', text: '你把这座城市和上辈子住过的城市弄混了，两套房都买在了冷清的地段，月供压得爸爸天天叹气。', effects: { stats: { wealth: -15, happiness: -6 } } },
         ],
       },
@@ -240,7 +240,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['parents-trust'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '决赛希腊 1:0 爆冷击败葡萄牙，赔率高得吓人。爸爸赢了一大笔“零花钱”，第二天给你买了个新书包。', effects: { stats: { wealth: 4, influence: 3, fame: 1, happiness: 3 }, divergence: 2 } },
+          { tag: 'success', text: '决赛希腊 1:0 爆冷击败葡萄牙，赔率高得吓人。爸爸赢了一大笔“零花钱”，第二天给你买了个新书包。', effects: { stats: { wealth: 4, influence: 3, fame: 1, happiness: 3 } } },
           { tag: 'misremember', text: '你把冠军和亚军记反了，让爸爸押了葡萄牙。终场哨响时，爸爸的脸比葡萄牙球迷还难看。', effects: { stats: { wealth: -2, happiness: -2 } } },
         ],
       },
@@ -249,7 +249,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['family-has-money'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '一圈老板全押了葡萄牙，结果希腊捧杯。爸爸收钱收到手软，从此在圈子里多了个“神算”的外号。', effects: { stats: { wealth: 15, influence: 4 }, divergence: 3 } },
+          { tag: 'success', text: '一圈老板全押了葡萄牙，结果希腊捧杯。爸爸收钱收到手软，从此在圈子里多了个“神算”的外号。', effects: { stats: { wealth: 15, influence: 4 } } },
           { tag: 'misremember', text: '你记岔了决赛的结果，爸爸庄家当得一塌糊涂，赔得肉疼。', effects: { stats: { wealth: -8, happiness: -4 } } },
         ],
       },
@@ -271,7 +271,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['parents-trust'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸妈拿出一小笔钱买了几只股票，然后照你说的“忘了它”。到了年底，账户已经悄悄翻红。', effects: { stats: { wealth: 3, influence: 3 }, divergence: 2, addFlags: ['family-stock-2005'] } },
+          { tag: 'success', text: '爸妈拿出一小笔钱买了几只股票，然后照你说的“忘了它”。到了年底，账户已经悄悄翻红。', effects: { stats: { wealth: 3, influence: 3 }, addFlags: ['family-stock-2005'] } },
           { tag: 'misremember', text: '你记错了见底的月份，让爸妈抄底抄早了，结果又跌了一截。他们开始怀疑你只是运气好。', effects: { stats: { wealth: -2, happiness: -2 } } },
         ],
       },
@@ -280,7 +280,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['family-has-money'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸妈在一片哀嚎声里悄悄建了仓。年底一算，已经小赚一笔，而你知道这只是开始。', effects: { stats: { wealth: 10, influence: 3 }, divergence: 3, addFlags: ['family-stock-2005'] } },
+          { tag: 'success', text: '爸妈在一片哀嚎声里悄悄建了仓。年底一算，已经小赚一笔，而你知道这只是开始。', effects: { stats: { wealth: 10, influence: 3 }, addFlags: ['family-stock-2005'] } },
           { tag: 'misremember', text: '你把板块记错了，爸妈买进的几只股票在别人都回暖时还在往下掉。', effects: { stats: { wealth: -6, happiness: -3 } } },
         ],
       },
@@ -289,7 +289,7 @@ export const earlyYearsEvents: GameEvent[] = [
         requires: { flags: ['family-stock-trapped'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸爸咬着牙没割肉。到了年底行情开始回暖，他第一次觉得那几年没白熬。', effects: { stats: { wealth: 3, happiness: 5 }, divergence: 1, removeFlags: ['family-stock-trapped'], addFlags: ['family-stock-2005'] } },
+          { tag: 'success', text: '爸爸咬着牙没割肉。到了年底行情开始回暖，他第一次觉得那几年没白熬。', effects: { stats: { wealth: 3, happiness: 5 }, removeFlags: ['family-stock-trapped'], addFlags: ['family-stock-2005'] } },
           { tag: 'misremember', text: '你话说得颠三倒四，爸爸以为你是让他“赶紧走”，在最低点割了肉。后来说起这事，他总是一脸苦笑。', effects: { stats: { wealth: -4, happiness: -4 }, removeFlags: ['family-stock-trapped'] } },
         ],
       },
@@ -310,7 +310,7 @@ export const earlyYearsEvents: GameEvent[] = [
         text: '摇摇晃晃走到大衣柜前，拍了拍夹层',
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '妈妈将信将疑地伸手一摸，存折真的在里面！爸妈对视了一眼，从此开始认真听你说的“胡话”。', effects: { stats: { influence: 3, happiness: 3 }, divergence: 1, addFlags: ['parents-trust'] } },
+          { tag: 'success', text: '妈妈将信将疑地伸手一摸，存折真的在里面！爸妈对视了一眼，从此开始认真听你说的“胡话”。', effects: { stats: { influence: 3, happiness: 3 }, addFlags: ['parents-trust'] } },
           { tag: 'misremember', text: '你拍错了柜子。爸妈把那个柜子翻了个底朝天，什么也没找到，还碰碎了一面镜子。', effects: { stats: { happiness: -2, wealth: -0.05 } } },
         ],
       },
@@ -399,7 +399,7 @@ export const earlyYearsEvents: GameEvent[] = [
         text: '缠着爸妈带奶奶去城里做个体检',
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '你记得奶奶后来查出的那场病。体检果然发现了苗头，好在发现得早，医生说能治。', effects: { stats: { happiness: 5, influence: 1, wealth: -0.5 }, divergence: 2 } },
+          { tag: 'success', text: '你记得奶奶后来查出的那场病。体检果然发现了苗头，好在发现得早，医生说能治。', effects: { stats: { happiness: 5, influence: 1, wealth: -0.5 } } },
           { tag: 'misremember', text: '你把奶奶和外婆的病史记混了。体检一切正常，来回折腾倒让奶奶累病了好几天。', effects: { stats: { happiness: -2, wealth: -0.2 } } },
         ],
       },
@@ -423,7 +423,7 @@ export const earlyYearsEvents: GameEvent[] = [
   {
     id: 'family-dad-stock-trapped',
     category: 'family',
-    requires: { minAge: 4, maxAge: 6, flags: ['family-stock-trapped'] },
+    requires: { minAge: 4, maxAge: 6, minYear: 2002, maxYear: 2005, flags: ['family-stock-trapped'] },
     weight: 25,
     title: '绿油油的K线',
     text: '爸爸的股票绿了一年又一年。他每天晚上守着电视里的行情，烟一根接一根，妈妈说他“魂都被套进去了”。',
@@ -433,7 +433,7 @@ export const earlyYearsEvents: GameEvent[] = [
         text: '凑到他耳边说：“别割肉，熬到 2005 年……”',
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '爸爸愣了半天，笑着说“小孩子懂什么”，却真把割肉的念头压了下去。', effects: { stats: { happiness: 2, influence: 1 }, divergence: 1 } },
+          { tag: 'success', text: '爸爸愣了半天，笑着说“小孩子懂什么”，却真把割肉的念头压了下去。', effects: { stats: { happiness: 2, influence: 1 } } },
           { tag: 'misremember', text: '你把年份说错了。爸爸照着你说的日子等，到了那天行情反而更差，他气得把电视关了。', effects: { stats: { happiness: -3 } } },
         ],
       },
@@ -471,7 +471,7 @@ export const earlyYearsEvents: GameEvent[] = [
         text: '闭上眼，装模作样地“回忆”',
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '你哪记得什么开奖号码，只隐约记得那阵子小号出得多。三叔照着蒙了一注，居然中了个小奖，从此逢人就说你是“文曲星下凡”。', effects: { stats: { fame: 4, influence: 2, happiness: 3 }, divergence: 1 } },
+          { tag: 'success', text: '你哪记得什么开奖号码，只隐约记得那阵子小号出得多。三叔照着蒙了一注，居然中了个小奖，从此逢人就说你是“文曲星下凡”。', effects: { stats: { fame: 4, influence: 2, happiness: 3 } } },
           { tag: 'misremember', text: '你报的号码一个都没中。三叔嘴上说没事，此后每年过年都要念叨一句“神童也有失手的时候”。', effects: { stats: { charm: -3, happiness: -2 } } },
         ],
       },
@@ -504,7 +504,7 @@ export const earlyYearsEvents: GameEvent[] = [
       {
         text: '咬咬牙，向妈妈“坦白”一部分',
         outcomes: [
-          { weight: 1, text: '妈妈盯着你看了很久，最后说：“这件事，只能咱们一家三口知道。”从那天起，爸妈开始认真听你说话。', effects: { stats: { influence: 4 }, divergence: 2, addFlags: ['parents-trust'] } },
+          { weight: 1, text: '妈妈盯着你看了很久，最后说：“这件事，只能咱们一家三口知道。”从那天起，爸妈开始认真听你说话。', effects: { stats: { influence: 4 }, addFlags: ['parents-trust'] } },
           { weight: 1, text: '妈妈吓坏了，第二天就带你去医院看医生。本子被没收，你也学会了闭嘴。', effects: { stats: { happiness: -5, memory: -6 }, removeFlags: ['future-notebook'] } },
         ],
       },

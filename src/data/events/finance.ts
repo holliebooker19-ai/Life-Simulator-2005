@@ -18,7 +18,7 @@ export const financeEvents: GameEvent[] = [
           {
             tag: 'success',
             text: '爸爸笑着押了一小注西班牙，结果赢了。他看你的眼神开始不太一样了。',
-            effects: { stats: { wealth: 3, influence: 2 }, addFlags: ['parents-trust'], divergence: 1 },
+            effects: { stats: { wealth: 3, influence: 2 }, addFlags: ['parents-trust'] },
           },
           { tag: 'misremember', text: '你记混了，喊成了荷兰。爸爸听了你的，输了一点小钱。', effects: { stats: { wealth: -2, happiness: -3 } } },
         ],
@@ -41,7 +41,7 @@ export const financeEvents: GameEvent[] = [
         requires: { flags: ['family-has-money'] },
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '父母半信半疑地投了一笔。你默默看着价格一路向上，在高点前把仓位撤回来了。', effects: { stats: { wealth: 500, influence: 3 }, divergence: 2 } },
+          { tag: 'success', text: '父母半信半疑地投了一笔。你默默看着价格一路向上，在高点前把仓位撤回来了。', effects: { stats: { wealth: 500, influence: 3 } } },
           { tag: 'misremember', text: '你记错了时间点，买在了高位，被套了很久。', effects: { stats: { wealth: -80, happiness: -8 } } },
         ],
       },
@@ -69,7 +69,7 @@ export const financeEvents: GameEvent[] = [
         text: '全押阿根廷夺冠',
         usesMemory: true,
         outcomes: [
-          { tag: 'success', text: '点球踢进的那一刻你整个人都在抖，这一注让你一夜暴富。', effects: { stats: { wealth: 800, fame: 5, happiness: 10 }, divergence: 3 } },
+          { tag: 'success', text: '点球踢进的那一刻你整个人都在抖，这一注让你一夜暴富。', effects: { stats: { wealth: 800, fame: 5, happiness: 10 } } },
           { tag: 'misremember', text: '你把记忆里的另一场比赛弄混了，押错了队，血本无归。', effects: { stats: { wealth: -300, happiness: -15 } } },
         ],
       },

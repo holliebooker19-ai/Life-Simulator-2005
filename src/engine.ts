@@ -15,6 +15,7 @@ export function newState(): GameState {
     alive: true,
     stats: { intelligence: 30, charm: 30, health: 70, happiness: 50, fame: 0, influence: 0, memory: 50, wealth: 0 },
     divergence: 0,
+    altered: {},
     flags: new Set(),
     seen: new Set(),
     lastDone: {},
@@ -31,10 +32,18 @@ export function applyEffects(s: GameState, e?: Effects): void {
       s.stats[k] += e.stats[k] ?? 0
     }
   }
-  if (e.divergence) s.divergence = clamp(s.divergence + e.divergence, 0, 100)
+  if (e.alter?.length) {
+    for (const a of e.alter) s.altered[a.id] = Math.max(s.altered[a.id] ?? 0, a.scale)
+    s.divergence = divergenceOf(s)
+  }
   e.addFlags?.forEach((f) => s.flags.add(f))
   e.removeFlags?.forEach((f) => s.flags.delete(f))
   clampStats(s.stats)
+}
+
+/** 世界线偏离度 = 所有被改写锚点的 scale 之和（上限 100） */
+export function divergenceOf(s: GameState): number {
+  return clamp(Object.values(s.altered).reduce((a, b) => a + b, 0), 0, 100)
 }
 
 function clampStats(st: Stats): void {
@@ -48,6 +57,8 @@ export function meets(s: GameState, c?: Condition): boolean {
   if (c.maxAge !== undefined && s.age > c.maxAge) return false
   if (c.minYear !== undefined && s.year < c.minYear) return false
   if (c.maxYear !== undefined && s.year > c.maxYear) return false
+  if (c.altered?.some((id) => !(id in s.altered))) return false
+  if (c.notAltered?.some((id) => id in s.altered)) return false
   if (c.divergenceMin !== undefined && s.divergence < c.divergenceMin) return false
   if (c.divergenceMax !== undefined && s.divergence > c.divergenceMax) return false
   for (const k of Object.keys(c.statMin ?? {}) as StatKey[]) if (s.stats[k] < (c.statMin![k] ?? 0)) return false

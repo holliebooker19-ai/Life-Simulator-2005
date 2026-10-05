@@ -3,6 +3,8 @@
 > 状态：设计稿，尚未实现。实现前请先读 `AGENT.md`、`NAMING.md`、`EVENT_GUIDE.md`。
 > 本文列出的现实事实仅为“锚点候选”，**写成事件前必须逐条核对**，拿不准的写模糊（AGENT.md 第 3 条）。
 
+> **P0 已完成**：个人下注不再产生偏离；偏离度由 `Effects.alter`（锚点改写）派生；新增 `Condition.altered/notAltered`；随机事件含年份必须带 `minYear`。实现与写法见 `docs/EVENT_GUIDE.md` 的“世界线”。第一节保留作审计记录，其中的 `variants/dependsOn` 方案已简化为 `altered/notAltered` 条件。
+
 ## 一、现状审计：世界线会不会和现实不一样？
 
 目标原则：**世界按真实历史走；只有主角的个人影响才会让它偏离。**

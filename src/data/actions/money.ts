@@ -31,7 +31,7 @@ export const moneyActions: GameAction[] = [
     usesMemory: true,
     cooldown: 1,
     outcomes: [
-      { tag: 'success', text: '你回想起未来的涨幅榜，提前上车，稳稳赚了一笔。', effects: { stats: { wealth: 30, influence: 1 }, divergence: 2 } },
+      { tag: 'success', text: '你回想起未来的涨幅榜，提前上车，稳稳赚了一笔。', effects: { stats: { wealth: 30, influence: 1 } } },
       { tag: 'misremember', text: '你把涨幅榜和别的年份记混了，买到一只后来腰斩的股票。', effects: { stats: { wealth: -15, happiness: -4 } } },
     ],
   },
@@ -41,7 +41,7 @@ export const moneyActions: GameAction[] = [
     usesMemory: true,
     cooldown: 2,
     outcomes: [
-      { tag: 'success', text: '行情完全按你的记忆走，账户数字一路飙升。', effects: { stats: { wealth: 400, fame: 3, influence: 3 }, divergence: 5 } },
+      { tag: 'success', text: '行情完全按你的记忆走，账户数字一路飙升。', effects: { stats: { wealth: 400, fame: 3, influence: 3 } } },
       { tag: 'misremember', text: '你记错了拐点，满仓被套，亏掉一大截身家。', effects: { stats: { wealth: -200, happiness: -10 } } },
     ],
   },

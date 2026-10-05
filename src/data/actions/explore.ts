@@ -46,23 +46,13 @@ export const exploreActions: GameAction[] = [
     ],
   },
   {
-    id: 'act-use-memory-fame', group: 'explore', text: '“预言”一件即将发生的事', hint: '用记忆换名声，偏离度↑',
+    id: 'act-use-memory-fame', group: 'explore', text: '“预言”一件即将发生的事', hint: '用记忆换名声',
     requires: { minAge: 12, maxYear: 2026 },
     usesMemory: true,
     cooldown: 2,
     outcomes: [
-      { tag: 'success', text: '你随口说中了接下来发生的事，周围的人看你的眼神变了。', effects: { stats: { fame: 4, influence: 2, happiness: 2 }, divergence: 3 } },
+      { tag: 'success', text: '你随口说中了接下来发生的事，周围的人看你的眼神变了。', effects: { stats: { fame: 4, influence: 2, happiness: 2 } } },
       { tag: 'misremember', text: '你记混了细节，预言错得离谱，成了大家的笑柄。', effects: { stats: { fame: -2, happiness: -4, charm: -1 } } },
-    ],
-  },
-  {
-    id: 'act-change-world', group: 'explore', text: '悄悄改变一件历史小事', hint: '大胆干预，世界线偏离度大幅↑',
-    requires: { minAge: 18, maxYear: 2026, statMin: { influence: 20, memory: 40 } },
-    usesMemory: true,
-    cooldown: 3,
-    outcomes: [
-      { tag: 'success', text: '你的一个小小的举动，让一件本来该发生的事没有发生。世界线微妙地偏了一下。', effects: { stats: { influence: 5, fame: 3 }, divergence: 10 } },
-      { tag: 'misremember', text: '你记错了关键的节点，反而帮了倒忙，事情变得更糟。', effects: { stats: { happiness: -6, influence: -2 }, divergence: 6 } },
     ],
   },
 ]

@@ -17,11 +17,18 @@
 - 赌博/随机：同一选项里写多个 `outcomes` 并配 `weight`。
 - `rarity`：`common` 日常；`rare` 小高光；`legendary` 改变人生/世界线，数量要克制。
 - 数值参考：`wealth` 单位是万元；普通小赚 5–50，大赚 500–5000，首富级 100000+；
-  `divergence` 小干预 +1~3，大干预 +10~25。
+  `alter.scale`：小改动 1~5，大改动 10~25（见“世界线”）。
 
-## 世界线
-利用记忆改变现实后，用 `addFlags` 记录变化（如 `ai-opensource`），后续事件用 `flags`/`notFlags` 分岔。
-`divergenceMin` 高的事件应当“和现实不一样”，可以荒谬。
+## 世界线（重要）
+原则：**世界按真实历史走，只有主角的个人影响才会让它偏离。**
+- 现实节点（带 `year` + `realFact`）是“锚点”，默认按真实历史发生。写它时，`requires`/选项里不要因为玩家赚了钱、出了名就改变事实本身。
+- 个人收益（`wealth`、`fame`、`influence` 等）**不会**增加偏离度，不要为“押对了世界杯”之类个人获利写偏离。
+- 想让玩家**改写某件历史事**：在选项里给高影响力门槛（`requires: { statMin: { influence: N } }`），并在结果里写
+  `alter: [{ id: '<被改写的锚点事件 id>', scale: 1~25 }]`；`id` 必须是已存在的事件 id（测试会检查）。
+- 同一年写两个版本：真实版 `requires: { notAltered: ['<id>'] }`，改写版 `requires: { altered: ['<id>'] }`。后续事件用 `altered/notAltered`、`flags/notFlags` 分岔。
+- 想让后续历史“跟着变”：给下游事件加 `requires.altered`（被改写时才出现）或 `notAltered`（被改写后消失）。
+- 带现实内容、但没有 `year` 的随机事件，必须写 `minYear`（测试会检查），否则会在错误年份出现。
+- 偏离度是派生值，不能直接写；`divergenceMin/Max` 条件可以读。荒谬剧情放在高偏离度或 2027 年之后。
 
 ## 提交流程
 1. 先读 `AGENT.md`、`NAMING.md`。

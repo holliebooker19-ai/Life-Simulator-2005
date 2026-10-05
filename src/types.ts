@@ -12,14 +12,18 @@ export interface Stats {
 
 export type StatKey = keyof Stats
 
-/** 世界线偏离度 0-100。越高，现实记忆越不可靠 */
+/** 世界线偏离度 0-100，由被改写的历史锚点派生。越高，现实记忆越不可靠 */
 export type Divergence = number
 
 export type StatDelta = Partial<Record<StatKey, number>>
 
 export interface Effects {
   stats?: StatDelta
-  divergence?: number // 世界线偏离度增量
+  /**
+   * 改写历史锚点：{ id: 事件id, scale: 影响大小 1~25 }。
+   * 只有“真的改变了世界”才用它；个人赚钱/成名/人脉不要用。世界线偏离度由所有被改写锚点的 scale 之和派生。
+   */
+  alter?: { id: string; scale: number }[]
   addFlags?: string[]
   removeFlags?: string[]
 }
@@ -36,7 +40,10 @@ export interface Condition {
   /** 必须拥有 / 必须没有的标记 */
   flags?: string[]
   notFlags?: string[]
-  /** 世界线偏离度范围 */
+  /** 锚点是否被玩家改写：用于写“改写后的版本”事件，真实版本写 notAltered */
+  altered?: string[]
+  notAltered?: string[]
+  /** 世界线偏离度范围（派生值） */
   divergenceMin?: number
   divergenceMax?: number
 }
@@ -127,7 +134,9 @@ export interface GameState {
   age: number
   alive: boolean
   stats: Stats
-  divergence: Divergence
+  divergence: Divergence // 派生值，由 altered 计算
+  /** 被改写的锚点：事件 id → 影响大小 */
+  altered: Record<string, number>
   flags: Set<string>
   seen: Set<string>
   /** 行动上次执行的年份，用于冷却 */

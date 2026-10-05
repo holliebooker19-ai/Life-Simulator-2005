@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { ALL_ACTIONS } from '../src/data/actions'
 import { ALL_EVENTS } from '../src/data/events'
 import { EXTRA_CHOICES } from '../src/data/extra-choices'
+import { HEADLINES } from '../src/data/headlines'
+import { WORLD_VARS } from '../src/data/world'
+import type { Choice, Condition } from '../src/types'
 import { availableActions, markAction, newState, withExtraChoices } from '../src/engine'
 
 // 真实人名/公司名黑名单：出现即说明没有按 docs/NAMING.md 改名
@@ -141,5 +144,52 @@ describe('actions', () => {
     expect(out[0]).toBe(base[0])
     expect(out.length).toBe(3)
     expect(out.slice(1).every((c) => c.free)).toBe(true)
+  })
+})
+
+describe('世界线与科技树', () => {
+  const known = new Set(WORLD_VARS.map((v) => v.id))
+  const conds = (c?: Condition): string[] => [...Object.keys(c?.worldMin ?? {}), ...Object.keys(c?.worldMax ?? {})]
+  const choiceKeys = (c: Choice): string[] => [
+    ...conds(c.requires),
+    ...c.outcomes.flatMap((o) => [...conds(o.requires), ...Object.keys(o.effects?.world ?? {})]),
+  ]
+
+  it('事件和行动里用到的世界变量都已登记（src/data/world.ts）', () => {
+    const used = [
+      ...ALL_EVENTS.flatMap((e) => [
+        ...conds(e.requires), ...Object.keys(e.effects?.world ?? {}), ...(e.choices ?? []).flatMap(choiceKeys),
+        ...(e.variants ?? []).flatMap((v) => conds(v.requires)),
+      ]),
+      ...ALL_ACTIONS.flatMap(choiceKeys),
+    ]
+    for (const k of used) expect(known.has(k), `未登记的世界变量：${k}`).toBe(true)
+  })
+
+  it('dependsOn 指向存在的事件', () => {
+    const ids = new Set(ALL_EVENTS.map((e) => e.id))
+    for (const e of ALL_EVENTS) for (const d of e.dependsOn ?? []) expect(ids.has(d), `${e.id}: dependsOn ${d} 不存在`).toBe(true)
+  })
+
+  it('新闻的锚点存在且年份一致；2026 年前每个可改写的锚点都有“改写版”新闻', () => {
+    const byId = new Map(ALL_EVENTS.map((e) => [e.id, e]))
+    for (const h of HEADLINES) {
+      if (!h.anchor) continue
+      const ev = byId.get(h.anchor)
+      expect(ev, `新闻锚点不存在：${h.anchor}`).toBeDefined()
+      if (ev?.year !== undefined) expect(ev.year, h.anchor).toBe(h.year)
+      expect(h.altered, `${h.anchor}: 缺少 altered`).toBeTruthy()
+    }
+    const anchored = new Set(HEADLINES.map((h) => h.anchor))
+    const altered = ALL_EVENTS.flatMap((e) => (e.choices ?? []).flatMap((c) => c.outcomes.flatMap((o) => o.effects?.alter ?? [])))
+    for (const a of altered) {
+      const ev = byId.get(a.id)
+      if (ev?.year !== undefined && ev.year <= 2026) expect(anchored.has(a.id), `可改写锚点缺少新闻：${a.id}`).toBe(true)
+    }
+  })
+
+  it('新闻不含真实人名/公司名', () => {
+    const blob = JSON.stringify(HEADLINES)
+    for (const w of [...FORBIDDEN, ...namingForbidden()]) expect(blob.includes(w), `出现未改名的词：${w}`).toBe(false)
   })
 })

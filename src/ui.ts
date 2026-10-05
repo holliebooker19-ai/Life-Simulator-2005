@@ -1,5 +1,7 @@
 import { bannerEl, heroEl } from './art'
-import { formatWealth } from './engine'
+import { formatWealth, worldlineDiff, worldOf } from './engine'
+import { HEADLINES } from './data/headlines'
+import { TECH_MAX, WORLD_VARS } from './data/world'
 import { ORIGINS, TALENTS } from './data/talents'
 import { ALLOC_MAX, ALLOC_STATS, drawOrigin, drawTalent, runGame, START_POINTS, START_REROLLS, type Host } from './game'
 import { clearSave, loadGame, saveGame } from './save'
@@ -17,7 +19,7 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): 
 
 const RARITY_LABEL: Record<Rarity, string> = { common: '普通', rare: '稀有', legendary: '传说' }
 const GROUP_LABEL: Record<ActionGroup, string> = {
-  study: '学习', body: '身体', social: '社交', work: '工作', money: '理财', explore: '探索', life: '生活',
+  study: '学习', body: '身体', social: '社交', work: '工作', money: '理财', explore: '探索', life: '生活', world: '改变世界',
 }
 const GROUP_ORDER = Object.keys(GROUP_LABEL) as ActionGroup[]
 /** 日志里最近多少条保持展开，更早的折叠成标题 */
@@ -156,8 +158,11 @@ async function startGame(origin: Origin, talents: Talent[], alloc: Record<string
   const header = h('div', 'year', '1998 · 0岁')
   const spd = h('button', 'btn small', '加速：关')
   spd.onclick = () => { speed = speed === 1 ? 4 : 1; spd.textContent = `加速：${speed === 1 ? '关' : '开'}` }
+  const wl = h('button', 'btn small', '世界线')
+  let current: GameState | null = resume ?? null
+  wl.onclick = () => { if (current) showWorld(current) }
   const top = h('div', 'panel-top')
-  top.append(header, spd)
+  top.append(header, wl, spd)
   const divWrap = h('div', 'diverge')
   const divBar = h('div', 'diverge-bar')
   divWrap.append(h('span', '', '世界线偏离度'), divBar)
@@ -197,6 +202,7 @@ async function startGame(origin: Origin, talents: Talent[], alloc: Record<string
     requestAnimationFrame(step)
   }
   const sync = (s: GameState) => {
+    current = s
     header.textContent = `${s.year} · ${s.age}岁`
     for (const [k] of STAT_LABELS) roll(k, s.stats[k])
     divBar.style.width = `${s.divergence}%`
@@ -300,6 +306,58 @@ async function startGame(origin: Origin, talents: Talent[], alloc: Record<string
   showEnding(state, ending)
 }
 
+/** 世界线面板：原历史 vs 你的世界、科技树、AI 格局、世界趋势 */
+function showWorld(s: GameState): void {
+  const mask = h('div', 'overlay')
+  const box = h('div', 'overlay-box')
+  const close = h('button', 'btn small', '关闭')
+  close.onclick = () => mask.remove()
+  mask.onclick = (e) => { if (e.target === mask) mask.remove() }
+  box.append(h('h3', '', `世界线偏离度 ${Math.round(s.divergence)}%`), close)
+
+  box.append(h('h4', 'sec', '原历史 vs 你的世界'))
+  const diff = worldlineDiff(s, HEADLINES)
+  if (!diff.length) box.append(h('p', 'sub', '还没有到达任何可以改写的历史节点。'))
+  for (const d of diff) {
+    const row = h('div', `wl-row${d.mine ? ' changed' : ''}`)
+    row.append(h('b', '', String(d.year)), h('p', '', `原历史：${d.real}`))
+    row.append(h('p', d.mine ? 'mine' : 'sub', d.mine ? `你的世界：${d.mine}` : '你的世界：（与原历史相同）'))
+    box.append(row)
+  }
+
+  const bar = (label: string, v: number, max: number) => {
+    const row = h('div', 'dim')
+    const b = h('div', 'dim-bar')
+    const fill = h('i')
+    fill.style.width = `${Math.max(0, Math.min(100, (v / max) * 100))}%`
+    b.append(fill)
+    row.append(h('span', '', label), b, h('b', '', max === TECH_MAX ? `${v}/${max}` : String(Math.round(v))))
+    return row
+  }
+  box.append(h('h4', 'sec', '科技树'))
+  const tech = h('div', 'dims')
+  for (const v of WORLD_VARS.filter((x) => x.kind === 'tech')) tech.append(bar(v.name, worldOf(s, v.id), TECH_MAX))
+  box.append(tech)
+
+  const power = WORLD_VARS.filter((x) => x.kind === 'power' && worldOf(s, x.id))
+  if (power.length) {
+    box.append(h('h4', 'sec', 'AI 格局'))
+    const g = h('div', 'dims')
+    for (const v of power) g.append(bar(v.name, worldOf(s, v.id), 100))
+    box.append(g)
+  }
+  const trends = WORLD_VARS.filter((x) => x.kind === 'trend' && worldOf(s, x.id))
+  if (trends.length) {
+    box.append(h('h4', 'sec', '世界趋势（相对原历史）'))
+    for (const v of trends) {
+      const n = Math.round(worldOf(s, v.id))
+      box.append(h('p', '', `${v.name}：${n > 0 ? '+' : ''}${n}（${v.desc}）`))
+    }
+  }
+  mask.append(box)
+  document.body.append(mask)
+}
+
 const DIM_LABEL: Record<EndingDim, string> = {
   wealth: '财富', influence: '影响力', world: '世界线', family: '家庭', joy: '幸福', longevity: '寿命',
 }
@@ -319,6 +377,10 @@ function showEnding(s: GameState, e: ReturnType<typeof import('./engine').comput
     dims.append(row)
   }
   box.append(dims, h('p', 'sub', `综合得分 ${e.score}`))
+  const paper = h('div', 'paper')
+  paper.append(h('div', 'paper-head', '世界日报 · 头版'))
+  for (const line of e.newspaper) paper.append(h('p', '', line))
+  box.append(paper)
   const img = h('img', 'share') as HTMLImageElement
   img.src = renderShareImage(s, e)
   const bar = h('div', 'bar')

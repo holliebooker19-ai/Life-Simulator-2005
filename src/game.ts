@@ -1,10 +1,11 @@
 import { ALL_ACTIONS } from './data/actions'
 import { ALL_EVENTS } from './data/events'
 import { EXTRA_CHOICES } from './data/extra-choices'
+import { HEADLINES } from './data/headlines'
 import { ORIGINS, TALENTS } from './data/talents'
 import {
-  applyEffects, applyTalentOrigin, availableActions, computeEnding, endYear, formatWealth, markAction, meets, newState,
-  pacing, pickEvents, pushLog, resolveChoice, settleYear, withExtraChoices,
+  applyEffects, applyTalentOrigin, availableActions, computeEnding, endYear, formatWealth, headlinesFor, isShifted, markAction,
+  meets, newState, pacing, pickEvents, presentEvent, pushLog, resolveChoice, settleYear, withExtraChoices,
 } from './engine'
 import { weightedPick, type Rng } from './rng'
 import type { Choice, Ending, GameAction, GameEvent, GameState, Origin, Outcome, Rarity, StatDelta, Talent } from './types'
@@ -69,9 +70,16 @@ export async function runGame(
 
   while (s.alive) {
     const pace = pacing(s)
+    const news = headlinesFor(s, HEADLINES)
+    if (news.length) {
+      const text = news.map((n) => (n.altered ? `【你的世界线】${n.text}` : n.text)).join('；')
+      await host.showAuto({ id: 'year-news', category: 'world', rarity: news.some((n) => n.altered) ? 'rare' : undefined, title: '新闻头条', text }, s)
+    }
     const events = pickEvents(s, ALL_EVENTS, rng, pace.randomEvents)
-    for (const ev of events) {
-      s.seen.add(ev.id)
+    for (const raw of events) {
+      s.seen.add(raw.id)
+      const ev = presentEvent(s, raw)
+      const shifted = isShifted(s, raw)
       const base = ev.choices?.filter((c) => meets(s, c.requires)) ?? []
       const visible = base.length ? withExtraChoices(s, base, EXTRA_CHOICES, rng, pace.extraChoices) : []
       if (!ev.choices || visible.length === 0) {
@@ -80,7 +88,7 @@ export async function runGame(
         await host.showAuto(ev, s)
       } else {
         const choice = await host.showChoice(ev, visible, s)
-        const { outcome, reliable } = resolveChoice(s, choice, rng)
+        const { outcome, reliable } = resolveChoice(s, choice, rng, shifted)
         applyEffects(s, outcome.effects)
         pushLog(s, ev.title, `${choice.text} → ${outcome.text}`, ev.rarity)
         await host.showOutcome(ev, outcome, reliable, s, pace.autoAdvance)
@@ -109,5 +117,5 @@ export async function runGame(
     if (!endYear(s, rng)) break
     host.onYear(s)
   }
-  return { state: s, ending: computeEnding(s) }
+  return { state: s, ending: computeEnding(s, HEADLINES) }
 }

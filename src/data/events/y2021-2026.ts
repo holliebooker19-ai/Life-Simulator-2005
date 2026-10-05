@@ -20,6 +20,7 @@ export const y2021to2026Events: GameEvent[] = [
   // ───────────── 现实锚点：2021 ─────────────
   {
     id: 'y2126-2021-btc-peak',
+    dependsOn: ['y1115-2013-bitcoin'],
     category: 'finance',
     rarity: 'rare',
     year: 2021,
@@ -258,7 +259,7 @@ export const y2021to2026Events: GameEvent[] = [
       {
         text: '公开发长文质疑它的储备金，号召大家提币',
         requires: { statMin: { influence: 50, fame: 30 } },
-        outcomes: [{ text: '你的长文引发了挤兑式的提前提币，丑闻提前半年暴露。很多普通人的钱因此保住了，币圈的历史也被你改写了一页。', effects: { stats: { fame: 8, influence: 5 }, alter: [{ id: 'y2126-2022-ftx', scale: 6 }] } }],
+        outcomes: [{ text: '你的长文引发了挤兑式的提前提币，丑闻提前半年暴露。很多普通人的钱因此保住了，币圈的历史也被你改写了一页。', effects: { stats: { fame: 8, influence: 5 }, alter: [{ id: 'y2126-2022-ftx', scale: 6 }], world: { crypto: 5, media: 5 } } }],
       },
       { text: '我又没放钱在那儿', outcomes: [{ text: '你安慰了朋友一整晚，请他吃了一顿烧烤。', effects: { stats: { charm: 1, happiness: -1 } } }] },
     ],
@@ -347,6 +348,7 @@ export const y2021to2026Events: GameEvent[] = [
   },
   {
     id: 'y2126-2023-gpu',
+    dependsOn: ['world-ai-lab'],
     category: 'finance',
     rarity: 'rare',
     year: 2023,
@@ -400,6 +402,7 @@ export const y2021to2026Events: GameEvent[] = [
   },
   {
     id: 'y2126-2024-btc-etf',
+    dependsOn: ['y1115-2013-bitcoin', 'y2126-2022-ftx'],
     category: 'finance',
     year: 2024,
     requires: { minAge: 26 },
@@ -501,6 +504,7 @@ export const y2021to2026Events: GameEvent[] = [
   // ───────────── 现实锚点：2025 ─────────────
   {
     id: 'y2126-2025-ai-shock',
+    dependsOn: ['world-ai-lab'],
     category: 'finance',
     rarity: 'rare',
     year: 2025,

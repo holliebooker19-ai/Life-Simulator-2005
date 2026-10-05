@@ -182,6 +182,7 @@ export const y2016to2020Events: GameEvent[] = [
   // ───────────── 现实锚点：2017 ─────────────
   {
     id: 'y1620-2017-btc-payoff',
+    dependsOn: ['y1115-2013-bitcoin'],
     category: 'finance',
     rarity: 'rare',
     year: 2017,
@@ -219,6 +220,7 @@ export const y2016to2020Events: GameEvent[] = [
   },
   {
     id: 'y1620-2017-ico-ban',
+    dependsOn: ['y1115-2013-bitcoin'],
     category: 'finance',
     year: 2017,
     requires: { minAge: 19 },
@@ -334,7 +336,7 @@ export const y2016to2020Events: GameEvent[] = [
       {
         text: '在网上公开起底这类平台的资金池模式',
         requires: { statMin: { influence: 30, fame: 15 } },
-        outcomes: [{ text: '你的调查长文引发了大讨论，很多人赶在暴雷前撤出了资金，监管也提前出手。这一次，暴雷潮的规模比原本的历史小了很多。', effects: { stats: { fame: 8, influence: 5 }, alter: [{ id: 'y1620-2018-p2p', scale: 4 }], addFlags: ['parents-trust'] } }],
+        outcomes: [{ text: '你的调查长文引发了大讨论，很多人赶在暴雷前撤出了资金，监管也提前出手。这一次，暴雷潮的规模比原本的历史小了很多。', effects: { stats: { fame: 8, influence: 5 }, alter: [{ id: 'y1620-2018-p2p', scale: 4 }], world: { media: 10, economy: 2 }, addFlags: ['parents-trust'] } }],
       },
       {
         text: '不好说什么，随妈妈去吧',
@@ -441,7 +443,7 @@ export const y2016to2020Events: GameEvent[] = [
       {
         text: '动用你积累的一切影响力，推动更早、更透明的预警与物资储备',
         requires: { statMin: { influence: 70, fame: 40 } },
-        outcomes: [{ text: '你在上一年就开始奔走，把资源和声音都押了上去。预警来得更早，物资准备得更足。这场灾难没有消失，但世界确实少走了一些弯路。', effects: { stats: { influence: 8, fame: 6, wealth: -50 }, alter: [{ id: 'y1620-2020-pandemic', scale: 20 }] } }],
+        outcomes: [{ text: '你在上一年就开始奔走，把资源和声音都押了上去。预警来得更早，物资准备得更足。这场灾难没有消失，但世界确实少走了一些弯路。', effects: { stats: { influence: 8, fame: 6, wealth: -50 }, alter: [{ id: 'y1620-2020-pandemic', scale: 20 }], world: { health: 30, economy: 10 } } }],
       },
       {
         text: '待在家里，照顾好家人',
@@ -465,6 +467,7 @@ export const y2016to2020Events: GameEvent[] = [
   },
   {
     id: 'y1620-2020-meltdown',
+    dependsOn: ['y1620-2020-pandemic'],
     category: 'finance',
     rarity: 'rare',
     year: 2020,
@@ -496,6 +499,7 @@ export const y2016to2020Events: GameEvent[] = [
   },
   {
     id: 'y1620-2020-gold',
+    dependsOn: ['y1620-2020-pandemic'],
     category: 'finance',
     year: 2020,
     requires: { minAge: 22 },
@@ -521,6 +525,7 @@ export const y2016to2020Events: GameEvent[] = [
     rarity: 'rare',
     year: 2020,
     requires: { minAge: 22, flags: ['y1620-in-college'] },
+    variants: [{ requires: { altered: ['y1620-2020-pandemic'] }, title: '毕业季', text: '因为疫情被提前控制住，毕业典礼照常在礼堂举行，你穿着学士服和室友们拍了一堆傻照。招聘会也照常开，但经济还是受了些冲击，好岗位并不好抢。你站在人生的岔路口。' }],
     title: '云毕业',
     text: '毕业典礼改成了线上，学位证是快递寄来的。招聘会也搬到了网上，很多公司缩招。你站在人生的岔路口。',
     realFact: '2020 年受疫情影响，全国高校普遍采用线上毕业典礼、线上招聘；当年高校毕业生规模约 870 万人。依据：教育部公开数据。',

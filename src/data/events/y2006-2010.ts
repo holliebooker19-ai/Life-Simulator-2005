@@ -200,7 +200,7 @@ export const y2006to2010Events: GameEvent[] = [
         text: '拉着爸爸牵线的境外朋友，把话递到那家投行的董事会',
         requires: { flags: ['family-has-money'], statMin: { influence: 50 } },
         outcomes: [
-          { text: '你的话经层层转手，居然真让那家投行拿到了一笔救命钱。倒闭的日子被往后拖了一年，你也为此搭进去不少家底。', effects: { stats: { wealth: -10, influence: 4, fame: 3 }, alter: [{ id: 'y0610-2008-crisis', scale: 10 }] } },
+          { text: '你的话经层层转手，居然真让那家投行拿到了一笔救命钱。倒闭的日子被往后拖了一年，你也为此搭进去不少家底。', effects: { stats: { wealth: -10, influence: 4, fame: 3 }, alter: [{ id: 'y0610-2008-crisis', scale: 10 }], world: { economy: 5 } } },
         ],
       },
       {
@@ -273,6 +273,7 @@ export const y2006to2010Events: GameEvent[] = [
   // ───────────── 现实锚点：2009 ─────────────
   {
     id: 'y0610-2009-housing',
+    dependsOn: ['y0610-2008-crisis'],
     category: 'finance',
     rarity: 'rare',
     year: 2009,

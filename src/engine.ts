@@ -1,5 +1,5 @@
 import type {
-  Choice, GameAction, Condition, Effects, Ending, EndingDim, GameEvent, GameState, Origin, Outcome, Stats, StatKey, Talent, YearBill,
+  Choice, GameAction, Condition, Effects, Ending, EndingDim, GameEvent, GameState, Headline, Origin, Outcome, Stats, StatKey, Talent, YearBill,
 } from './types'
 import { weightedPick, type Rng } from './rng'
 
@@ -28,6 +28,7 @@ export function newState(): GameState {
     origin: null,
     log: [],
     maxAge: MAX_AGE,
+    world: {},
     joySum: 0,
     joyYears: 0,
   }
@@ -46,7 +47,14 @@ export function applyEffects(s: GameState, e?: Effects): void {
   }
   e.addFlags?.forEach((f) => s.flags.add(f))
   e.removeFlags?.forEach((f) => s.flags.delete(f))
+  for (const [k, v] of Object.entries(e.world ?? {})) s.world[k] = clamp((s.world[k] ?? 0) + v, -100, 100)
+  if (e.maxAge) s.maxAge = Math.max(s.age + 1, s.maxAge + e.maxAge)
   clampStats(s.stats)
+}
+
+/** 读取世界状态变量，未设置视为 0 */
+export function worldOf(s: GameState, k: string): number {
+  return s.world[k] ?? 0
 }
 
 /** 世界线偏离度 = 所有被改写锚点的 scale 之和（上限 100） */
@@ -73,7 +81,26 @@ export function meets(s: GameState, c?: Condition): boolean {
   for (const k of Object.keys(c.statMax ?? {}) as StatKey[]) if (s.stats[k] > (c.statMax![k] ?? 0)) return false
   if (c.flags?.some((f) => !s.flags.has(f))) return false
   if (c.notFlags?.some((f) => s.flags.has(f))) return false
+  for (const [k, v] of Object.entries(c.worldMin ?? {})) if (worldOf(s, k) < v) return false
+  for (const [k, v] of Object.entries(c.worldMax ?? {})) if (worldOf(s, k) > v) return false
   return true
+}
+
+/** 事件依赖的锚点是否已被改写（世界线已偏移） */
+export function isShifted(s: GameState, ev: GameEvent): boolean {
+  return !!ev.dependsOn?.some((id) => id in s.altered)
+}
+
+/** 按世界状态取事件的展示版本：替换标题/正文，并给“已偏移”的事件加提示 */
+export function presentEvent(s: GameState, ev: GameEvent): GameEvent {
+  const v = ev.variants?.find((x) => meets(s, x.requires))
+  const text = v?.text ?? ev.text
+  const shifted = isShifted(s, ev)
+  return {
+    ...ev,
+    title: v?.title ?? ev.title,
+    text: shifted ? `${text}【世界线已偏移：这件事和你记忆里的不太一样了。】` : text,
+  }
 }
 
 export function applyTalentOrigin(s: GameState, talents: Talent[], origin: Origin): void {
@@ -171,11 +198,13 @@ export function resolveChoice(
   s: GameState,
   choice: Choice,
   rng: Rng,
+  /** 事件所依赖的锚点被改写时为 true：记忆可靠度减半 */
+  shifted = false,
 ): { outcome: Outcome; reliable?: boolean } {
   let pool = choice.outcomes.filter((o) => meets(s, o.requires))
   let reliable: boolean | undefined
   if (choice.usesMemory) {
-    reliable = rng() < memoryReliability(s)
+    reliable = rng() < memoryReliability(s) * (shifted ? 0.5 : 1)
     const wanted = reliable ? 'success' : 'misremember'
     const tagged = pool.filter((o) => o.tag === wanted)
     // 不可靠但没有写 misremember 时，退化为 fail，再退化为全部
@@ -259,10 +288,22 @@ export function yearlyDrift(s: GameState): void {
   if (s.age > 35) st.health -= (s.age - 35) * 0.12 * (s.flags.has('fit') ? 0.6 : 1)
   // 名望会被淡忘、影响力需要经营：每年按比例回落，想维持就得持续投入
   st.fame -= st.fame * 0.06
-  st.influence -= st.influence * 0.04
+  st.influence += influenceIncome(s) - st.influence * 0.05
   clampStats(st)
   s.joySum += st.happiness
   s.joyYears += 1
+}
+
+/**
+ * 每年自然获得的影响力：财富量级、名望、公司、基金会、公职。
+ * 稳定经营能在 30 岁前后攒到 50 左右，改写历史的门槛因此够得着。
+ */
+export function influenceIncome(s: GameState): number {
+  if (s.age < 16) return 0
+  const f = s.flags
+  const wealthTier = Math.max(0, Math.log10(Math.max(1, s.stats.wealth)) - 2) * 1.2 // 100 万起算，1 亿 ≈ 2.4
+  return wealthTier + s.stats.fame * 0.03 + (f.has('has-business') ? 2 : 0) + (f.has('has-foundation') ? 3 : 0) +
+    (f.has('y2126-civil-servant') ? 1 : 0)
 }
 
 /** 当年死亡概率：随年龄指数上升，体质越差越高 */
@@ -301,15 +342,32 @@ export function endingDims(s: GameState): Record<EndingDim, number> {
 
 const DIM_WEIGHT: Record<EndingDim, number> = { wealth: 0.25, influence: 0.2, world: 0.15, family: 0.15, joy: 0.15, longevity: 0.1 }
 
-export function computeEnding(s: GameState): Ending {
+/** 某一年的新闻：已改写的锚点显示玩家世界线的版本 */
+export function headlinesFor(s: GameState, pool: Headline[], year = s.year): { text: string; altered: boolean }[] {
+  return pool
+    .filter((h) => h.year === year && meets(s, h.requires))
+    .map((h) => {
+      const altered = !!h.anchor && h.anchor in s.altered && !!h.altered
+      return { text: altered ? h.altered! : h.real, altered }
+    })
+}
+
+/** 世界线对比：到目前为止所有锚点新闻的“原历史 vs 你的世界” */
+export function worldlineDiff(s: GameState, pool: Headline[]): { year: number; real: string; mine?: string }[] {
+  return pool
+    .filter((h) => h.anchor && h.year <= s.year)
+    .map((h) => ({ year: h.year, real: h.real, mine: h.anchor! in s.altered ? h.altered : undefined }))
+}
+
+export function computeEnding(s: GameState, headlines: Headline[] = []): Ending {
   const w = s.stats.wealth
   const dims = endingDims(s)
   const score = Math.round((Object.keys(dims) as EndingDim[]).reduce((a, k) => a + dims[k] * DIM_WEIGHT[k], 0))
   let grade: Ending['grade'] = 'D'
   if (score >= 70) grade = 'S'
-  else if (score >= 55) grade = 'A'
-  else if (score >= 42) grade = 'B'
-  else if (score >= 30) grade = 'C'
+  else if (score >= 58) grade = 'A'
+  else if (score >= 45) grade = 'B'
+  else if (score >= 32) grade = 'C'
 
   const f = s.flags
   const lonely = !f.has('married') && !f.has('partner') && !f.has('best-friend')
@@ -333,7 +391,9 @@ export function computeEnding(s: GameState): Ending {
   ]
   const title = titles.find(([ok]) => ok)?.[1] ?? '平凡但真实的一生'
   const summary = `享年 ${s.age} 岁（${BIRTH_YEAR}—${s.year}）。财富 ${formatWealth(w)}，世界线偏离度 ${Math.round(s.divergence)}%。`
-  return { grade, title, summary, dims, score }
+  const changed = worldlineDiff(s, headlines).filter((d) => d.mine).map((d) => `${d.year}：${d.mine}`)
+  const newspaper = changed.length ? changed.slice(-5) : ['世界照常运转。史书上没有你的名字，但你认真地活过了这一生。']
+  return { grade, title, summary, dims, score, newspaper }
 }
 
 export function formatWealth(wan: number): string {

@@ -26,6 +26,13 @@ export interface Effects {
   alter?: { id: string; scale: number }[]
   addFlags?: string[]
   removeFlags?: string[]
+  /**
+   * 改变世界状态变量（见 src/data/world.ts）：趋势类 0 = 与真实历史一致，正负表示偏离方向；
+   * 科技树类为等级 0-5（0 = 真实 2026 年的水平）。
+   */
+  world?: Record<string, number>
+  /** 寿命上限增减（科技树延寿等） */
+  maxAge?: number
 }
 
 export interface Condition {
@@ -46,6 +53,9 @@ export interface Condition {
   /** 世界线偏离度范围（派生值） */
   divergenceMin?: number
   divergenceMax?: number
+  /** 世界状态变量范围，未设置的变量视为 0 */
+  worldMin?: Record<string, number>
+  worldMax?: Record<string, number>
 }
 
 export interface Outcome {
@@ -73,7 +83,7 @@ export interface Choice {
   outcomes: (Outcome & { tag?: 'success' | 'fail' | 'misremember' })[]
 }
 
-export type ActionGroup = 'study' | 'body' | 'social' | 'work' | 'money' | 'explore' | 'life'
+export type ActionGroup = 'study' | 'body' | 'social' | 'work' | 'money' | 'explore' | 'life' | 'world'
 
 /** 每年可自由选择的“行动”，不依赖事件触发，是玩家主动权的主要来源 */
 export interface GameAction extends Choice {
@@ -103,6 +113,10 @@ export interface GameEvent {
   requires?: Condition
   title: string
   text: string
+  /** 按世界状态替换标题/正文：取第一个满足条件的版本（重量世界线用它做“同一事件、不同世界”的变体） */
+  variants?: { requires: Condition; title?: string; text: string }[]
+  /** 依赖的历史锚点：其中任何一个被改写，事件会标注“世界线已偏移”，预知可靠度减半 */
+  dependsOn?: string[]
   /** 无 choices 表示自动事件：直接结算 effects */
   effects?: Effects
   choices?: Choice[]
@@ -144,8 +158,10 @@ export interface GameState {
   talents: Talent[]
   origin: Origin | null
   log: LogEntry[]
-  /** 寿命上限，默认 100；以后由科技树（如基因工程）提高 */
+  /** 寿命上限，默认 100；由科技树（如基因工程）通过 Effects.maxAge 提高 */
   maxAge: number
+  /** 世界状态变量（含科技树等级），见 src/data/world.ts */
+  world: Record<string, number>
   /** 一生快乐值累计，用于结局的“幸福”维度 */
   joySum: number
   joyYears: number
@@ -166,6 +182,17 @@ export interface LogEntry {
   rarity?: Rarity
 }
 
+/** 新闻头条：原历史与玩家世界线的对照。带 anchor 的条目会进入“世界线对比”面板 */
+export interface Headline {
+  year: number
+  /** 关联的历史锚点（事件 id）：被改写时显示 altered */
+  anchor?: string
+  real: string
+  altered?: string
+  /** 只在满足条件时出现（2027 年后按世界状态生成新闻用） */
+  requires?: Condition
+}
+
 export type EndingDim = 'wealth' | 'influence' | 'world' | 'family' | 'joy' | 'longevity'
 
 export interface Ending {
@@ -175,4 +202,6 @@ export interface Ending {
   /** 六个维度的得分 0-100 */
   dims: Record<EndingDim, number>
   score: number
+  /** 结局报纸的头条 */
+  newspaper: string[]
 }

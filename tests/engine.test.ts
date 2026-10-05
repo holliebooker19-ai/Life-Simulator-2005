@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  actionPoints, pacing, applyEffects, computeEnding, endYear, joyBaseline, meets, memoryReliability, mortality, newState, pickEvents,
-  resolveChoice, settleYear, yearlyDrift,
+  actionPoints, pacing, applyEffects, computeEnding, endYear, headlinesFor, influenceIncome, isShifted, joyBaseline, meets,
+  memoryReliability, mortality, newState, pickEvents, presentEvent, resolveChoice, settleYear, worldlineDiff, yearlyDrift,
 } from '../src/engine'
 import { deserialize, serialize } from '../src/save'
 
@@ -168,5 +168,57 @@ describe('存档', () => {
     expect(back.seen.has('x')).toBe(true)
     expect(back.altered).toEqual({ a: 3 })
     expect(deserialize('not json')).toBeNull()
+  })
+})
+
+describe('世界状态与科技树（P3）', () => {
+  it('Effects.world 累加并限制在 -100~100，Condition.worldMin/worldMax 读取它，未设置视为 0', () => {
+    const s = newState()
+    expect(meets(s, { worldMax: { 'tech-gene': 0 } })).toBe(true)
+    applyEffects(s, { world: { 'tech-gene': 2, absurd: 500 } })
+    expect(s.world['tech-gene']).toBe(2)
+    expect(s.world.absurd).toBe(100)
+    expect(meets(s, { worldMin: { 'tech-gene': 2 } })).toBe(true)
+    expect(meets(s, { worldMin: { 'tech-gene': 3 } })).toBe(false)
+  })
+
+  it('Effects.maxAge 提高寿命上限（科技树延寿）', () => {
+    const s = newState()
+    applyEffects(s, { maxAge: 20 })
+    expect(s.maxAge).toBe(120)
+  })
+
+  it('variants 按世界状态替换正文；dependsOn 的锚点被改写时标注偏移并让预知可靠度减半', () => {
+    const s = newState(); s.year = 2010; s.stats.memory = 100
+    const ev = {
+      id: 'e', category: 'world' as const, title: 't', text: '原文', dependsOn: ['a'],
+      variants: [{ requires: { altered: ['a'] }, text: '改写后' }],
+    }
+    expect(presentEvent(s, ev).text).toBe('原文')
+    applyEffects(s, { alter: [{ id: 'a', scale: 1 }] })
+    expect(presentEvent(s, ev).text).toContain('改写后')
+    expect(presentEvent(s, ev).text).toContain('世界线已偏移')
+    expect(isShifted(s, ev)).toBe(true)
+    const choice = { text: 'c', usesMemory: true, outcomes: [{ tag: 'success' as const, text: 'ok' }, { tag: 'misremember' as const, text: 'bad' }] }
+    // 可靠度约 0.97：不偏移时 0.6 判定成功，偏移后（减半）判定失败
+    expect(resolveChoice(s, choice, () => 0.6).outcome.text).toBe('ok')
+    expect(resolveChoice(s, choice, () => 0.6, true).outcome.text).toBe('bad')
+  })
+
+  it('新闻与世界线对比：改写后显示你的版本', () => {
+    const pool = [{ year: 2008, anchor: 'x', real: '原', altered: '新' }, { year: 2008, real: '普通' }]
+    const s = newState(); s.year = 2008
+    expect(headlinesFor(s, pool).map((h) => h.text)).toEqual(['原', '普通'])
+    applyEffects(s, { alter: [{ id: 'x', scale: 5 }] })
+    expect(headlinesFor(s, pool)[0]).toEqual({ text: '新', altered: true })
+    expect(worldlineDiff(s, pool)).toEqual([{ year: 2008, real: '原', mine: '新' }])
+    expect(computeEnding(s, pool).newspaper[0]).toContain('新')
+  })
+
+  it('影响力：财富、名望、公司、基金会每年带来影响力', () => {
+    const s = newState(); s.age = 30
+    const base = influenceIncome(s)
+    s.stats.wealth = 10000; s.flags.add('has-business'); s.flags.add('has-foundation')
+    expect(influenceIncome(s)).toBeGreaterThan(base + 5)
   })
 })

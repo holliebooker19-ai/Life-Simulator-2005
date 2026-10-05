@@ -29,6 +29,9 @@
 - 同一年写两个版本：真实版 `requires: { notAltered: ['<id>'] }`，改写版 `requires: { altered: ['<id>'] }`。后续事件用 `altered/notAltered`、`flags/notFlags` 分岔。
 - 想让后续历史“跟着变”：给下游事件加 `requires.altered`（被改写时才出现）或 `notAltered`（被改写后消失）。
 - 带现实内容、但没有 `year` 的随机事件，必须写 `minYear`（测试会检查），否则会在错误年份出现。
+- 改写锚点时，同时用 `world` 写清楚它对世界的影响（如 `world: { crypto: 15 }`），并在 `src/data/headlines.ts` 补一条带 `anchor` 和 `altered` 的新闻。
+- 下游事件：受某个锚点影响但仍会发生的，写 `dependsOn: ['<锚点 id>']`；需要换说法的，写 `variants: [{ requires: { altered: [...] }, text: '…' }]`；按世界趋势分岔，用 `worldMin/worldMax`。
+- 科技树（`tech-*`）等级 0–5，0 = 真实 2026 年的水平；2026 年之前不要推进科技树。
 - 偏离度是派生值，不能直接写；`divergenceMin/Max` 条件可以读。荒谬剧情放在高偏离度或 2027 年之后。
 
 ## 提交流程

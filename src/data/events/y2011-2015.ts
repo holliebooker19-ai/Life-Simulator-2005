@@ -223,7 +223,7 @@ export const y2011to2015Events: GameEvent[] = [
         text: '在各大论坛写长帖“布道”，把它讲成全民话题',
         requires: { statMin: { influence: 25 } },
         outcomes: [
-          { text: '你的帖子被转疯了，一个初中生讲清楚了大人们都没讲清楚的东西。比特币比原本的历史更早地“出圈”了。', effects: { stats: { fame: 6, influence: 3 }, alter: [{ id: 'y1115-2013-bitcoin', scale: 5 }], addFlags: ['y1115-btc-hodl'] } },
+          { text: '你的帖子被转疯了，一个初中生讲清楚了大人们都没讲清楚的东西。比特币比原本的历史更早地“出圈”了。', effects: { stats: { fame: 6, influence: 3 }, alter: [{ id: 'y1115-2013-bitcoin', scale: 5 }], world: { crypto: 15 }, addFlags: ['y1115-btc-hodl'] } },
         ],
       },
       { text: '看看就好，这不是中学生该碰的东西', outcomes: [{ text: '你关掉网页去做数学卷子，心里默念：以后再说。', effects: { stats: { intelligence: 2 } } }] },
@@ -388,7 +388,7 @@ export const y2011to2015Events: GameEvent[] = [
         text: '在网上连发长文，公开预警杠杆风险',
         requires: { statMin: { influence: 40, fame: 20 } },
         outcomes: [
-          { text: '一个高中生的“股市风险分析”在网上被疯转，监管部门提前收紧了配资。这一次，暴跌被拉成了一段温和的回调——世界线因你而偏转。', effects: { stats: { fame: 10, influence: 6 }, alter: [{ id: 'y1115-2015-crash', scale: 8 }] } },
+          { text: '一个高中生的“股市风险分析”在网上被疯转，监管部门提前收紧了配资。这一次，暴跌被拉成了一段温和的回调——世界线因你而偏转。', effects: { stats: { fame: 10, influence: 6 }, alter: [{ id: 'y1115-2015-crash', scale: 8 }], world: { economy: 5 } } },
         ],
       },
       { text: '高考倒计时，别管这些了', outcomes: [{ text: '你戴上耳机刷题，窗外的哀嚎与你无关。', effects: { stats: { intelligence: 3, happiness: -1 } } }] },

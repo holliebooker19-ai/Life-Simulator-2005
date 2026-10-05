@@ -13,6 +13,7 @@ import type { GameAction } from '../../types'
  * - own-house / best-friend：买了房 / 有挚友
  * - retired：60 岁退休（由引擎年度结算写入）
  * - health-chronic：慢性病（events/health.ts）
+ * - has-foundation：成立了基金会（每年自然获得影响力）
  */
 const modules = import.meta.glob<Record<string, unknown>>(['./*.ts', '!./index.ts'], { eager: true })
 

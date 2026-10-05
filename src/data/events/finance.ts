@@ -28,6 +28,7 @@ export const financeEvents: GameEvent[] = [
   },
   {
     id: 'finance-2017-crypto',
+    dependsOn: ['y1115-2013-bitcoin'],
     category: 'finance',
     rarity: 'rare',
     year: 2017,

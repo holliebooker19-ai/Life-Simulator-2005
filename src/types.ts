@@ -110,6 +110,8 @@ export interface GameEvent {
   weight?: number
   /** 同一局内只触发一次，默认 true */
   once?: boolean
+  /** 每年都触发（满足条件时，可重复），和固定年份事件一起结算。用于世界的默认走向，如行业年报 */
+  annual?: boolean
   requires?: Condition
   title: string
   text: string

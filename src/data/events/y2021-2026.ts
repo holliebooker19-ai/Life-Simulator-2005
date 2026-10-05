@@ -295,8 +295,8 @@ export const y2021to2026Events: GameEvent[] = [
         text: '辞职，全身心投入大模型应用创业',
         requires: { flags: ['skill-coding'] },
         outcomes: [
-          { weight: 1, requires: { flags: ['y1620-ai-dream'] }, text: '你从 2016 年那场人机大战起就在准备这一天。你的团队做出了第一批爆款应用，投资人追着你跑。', effects: { stats: { wealth: 100, fame: 8, influence: 6 }, addFlags: ['has-business', 'y2126-ai-early'] } },
-          { weight: 2, text: '你和两个朋友做了一个 AI 写作工具，起步很快，但竞争也来得很快。至少，你站在了浪潮里。', effects: { stats: { wealth: 10, fame: 3, influence: 2, intelligence: 2 }, addFlags: ['has-business', 'y2126-ai-early'] } },
+          { weight: 1, requires: { flags: ['y1620-ai-dream'] }, text: '你从 2016 年那场人机大战起就在准备这一天。你的团队做出了第一批爆款应用，投资人追着你跑。', effects: { stats: { wealth: 100, fame: 8, influence: 6 }, addFlags: ['has-business', 'y2126-ai-early', 'ai-candidate'] } },
+          { weight: 2, text: '你和两个朋友做了一个 AI 写作工具，起步很快，但竞争也来得很快。至少，你站在了浪潮里。', effects: { stats: { wealth: 10, fame: 3, influence: 2, intelligence: 2 }, addFlags: ['has-business', 'y2126-ai-early', 'ai-candidate'] } },
         ],
       },
       { text: '“又是一个噱头。”', outcomes: [{ text: '你试了两句，觉得它“也就那样”，关掉了网页。', effects: { stats: { happiness: 1 } } }] },

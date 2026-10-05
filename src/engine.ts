@@ -112,17 +112,17 @@ export function applyTalentOrigin(s: GameState, talents: Talent[], origin: Origi
 
 /** 选出本年要触发的事件：先固定年份事件，再按权重抽随机事件 */
 export function pickEvents(s: GameState, pool: GameEvent[], rng: Rng, maxRandom = 1): GameEvent[] {
-  const available = pool.filter((e) => (e.once === false || !s.seen.has(e.id)) && meets(s, e.requires))
+  const available = pool.filter((e) => (e.once === false || e.annual || !s.seen.has(e.id)) && meets(s, e.requires))
   // 同一年固定事件太多会让节奏拥挤：按稀有度保留前 MAX_FIXED_PER_YEAR 个（同稀有度保持原顺序）
   const fixed = available
-    .filter((e) => e.year === s.year)
+    .filter((e) => e.year === s.year || e.annual)
     .map((e, i) => ({ e, i }))
     .sort((a, b) => RARITY_RANK[b.e.rarity ?? 'common'] - RARITY_RANK[a.e.rarity ?? 'common'] || a.i - b.i)
     .slice(0, MAX_FIXED_PER_YEAR)
     .sort((a, b) => a.i - b.i)
     .map((x) => x.e)
   const randoms: GameEvent[] = []
-  const candidates = available.filter((e) => e.year === undefined && s.age >= 0)
+  const candidates = available.filter((e) => e.year === undefined && !e.annual)
   for (let i = 0; i < maxRandom; i++) {
     const pick = weightedPick(candidates.filter((c) => !randoms.includes(c)), eventWeight, rng)
     if (pick) randoms.push(pick)
@@ -375,6 +375,7 @@ export function computeEnding(s: GameState, headlines: Headline[] = []): Ending 
   // 称号按优先级取第一个满足的
   const titles: [boolean, string][] = [
     [s.divergence >= 60 && s.stats.influence >= 60, '改写历史的人'],
+    [f.has('ai-agi-mine') || (f.has('ai-company') && worldOf(s, 'ai-player') >= 90), 'AI 时代的缔造者'],
     [w >= 100000, '首富之路'],
     [s.divergence >= 30 && s.stats.fame < 30, '隐形的推手'],
     [s.age < 30, '重生又重逝'],

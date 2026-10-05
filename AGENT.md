@@ -41,6 +41,6 @@
 - **年龄限制**：主角 1998 年出生，2005 年 7 岁，2013 年 15 岁，2026 年 28 岁。游戏重点年份是 2005 年起；15 岁前的现实事件需要“父母代理”（`parents-trust`、`family-has-money` 等标记）才能参与，写事件时要考虑主角当时的年龄是否合理。
 - **节奏**：`engine.ts` 的 `pacing()` 决定各年龄段的随机事件数、行动点、自由发挥选项数。0–6 岁为襁褓期（无行动菜单、结果自动继续），调节奏只改这张表。
 - **写实人生（DESIGN_V2 P1）**：属性上限 100（财富不限）；每年 `yearlyDrift` 让快乐回落到 `joyBaseline`，名望（6%/年）和影响力（5%/年）回落，并按财富、名望、公司、基金会自然获得影响力（`influenceIncome`），35 岁后体质下降；`settleYear` 结算年度账单（18 岁起）；死亡按 `mortality(年龄, 体质)` 概率判定，寿命上限 `state.maxAge`（默认 100，科技树可以提高）；每年最多 `MAX_FIXED_PER_YEAR = 4` 个固定事件，按稀有度取舍。
-- **世界状态与科技树（DESIGN_V2 P3）**：`state.world` 记录世界变量（登记在 `src/data/world.ts`，新变量必须登记）。事件用 `Effects.world` 修改它、用 `Condition.worldMin/worldMax` 读取它；`Effects.maxAge` 用于延寿；`variants` 按世界状态换正文；`dependsOn` 依赖的锚点被改写后，事件标注“偏移”，预知可靠度减半。每年的新闻在 `src/data/headlines.ts`，可改写的锚点（2026 年前）必须有带 `altered` 的新闻（测试会检查）。
+- **世界状态与科技树（DESIGN_V2 P3）**：`state.world` 记录世界变量（登记在 `src/data/world.ts`，新变量必须登记）。事件用 `Effects.world` 修改它、用 `Condition.worldMin/worldMax` 读取它；`Effects.maxAge` 用于延寿；`variants` 按世界状态换正文；`annual: true` 的事件每年满足条件就触发（用于世界的默认走向，如 AI 行业年报）；`dependsOn` 依赖的锚点被改写后，事件标注“偏移”，预知可靠度减半。每年的新闻在 `src/data/headlines.ts`，可改写的锚点（2026 年前）必须有带 `altered` 的新闻（测试会检查）。
 - **设计总纲**：`docs/DESIGN_V2.md`（爽点三阶段、答题预知、世界线、AI 公司主线、实施进度）。
 - **并行**：多个会话同时写内容时，遵守 `docs/PARALLEL.md`（各写各的新文件，不改引擎/UI/类型/已有事件）。

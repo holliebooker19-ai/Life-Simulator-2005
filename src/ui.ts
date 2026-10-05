@@ -339,11 +339,14 @@ function showWorld(s: GameState): void {
   for (const v of WORLD_VARS.filter((x) => x.kind === 'tech')) tech.append(bar(v.name, worldOf(s, v.id), TECH_MAX))
   box.append(tech)
 
-  const power = WORLD_VARS.filter((x) => x.kind === 'power' && worldOf(s, x.id))
+  const power = WORLD_VARS.filter((x) => x.kind === 'power' && s.world[x.id] !== undefined)
   if (power.length) {
     box.append(h('h4', 'sec', 'AI 格局'))
     const g = h('div', 'dims')
-    for (const v of power) g.append(bar(v.name, worldOf(s, v.id), 100))
+    for (const v of power) {
+      const n = worldOf(s, v.id)
+      g.append(n > 0 ? bar(v.name, n, 100) : (() => { const r = h('div', 'dim'); r.append(h('span', '', v.name), h('i', 'sub', '已出局')); return r })())
+    }
     box.append(g)
   }
   const trends = WORLD_VARS.filter((x) => x.kind === 'trend' && worldOf(s, x.id))

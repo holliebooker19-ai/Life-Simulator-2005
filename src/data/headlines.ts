@@ -54,6 +54,11 @@ export const HEADLINES: Headline[] = [
   { year: 2016, real: '围棋程序“阿尔法狗”4:1 战胜人类顶尖棋手；英国公投脱欧；川建国当选美国总统' },
   { year: 2017, real: '比特币逼近 2 万美元；代币发行融资（ICO）被全面叫停' },
   {
+    year: 2017, anchor: 'ai-2017-attention',
+    real: '论文《注意力就是你所需要的一切》提出 Transformer 架构，大模型时代的地基就此打下',
+    altered: '一名中国大学生抢先发表 Transformer 论文，学术圈为“时间线太巧”吵成一团',
+  },
+  {
     year: 2018, anchor: 'y1620-2018-p2p',
     real: 'P2P 网贷平台集中暴雷，大量出借人蒙受损失',
     altered: '一篇长文提前揭开 P2P 资金池的盖子，暴雷潮规模大幅缩小',
@@ -66,7 +71,17 @@ export const HEADLINES: Headline[] = [
     altered: '预警更早、物资储备更足，疫情带来的冲击明显减轻',
   },
   { year: 2020, real: '美股十天内四次熔断；全球央行开闸放水' },
+  {
+    year: 2020, anchor: 'ai-2020-gpt3',
+    real: 'closeai 发布 1750 亿参数的 GPD-3',
+    altered: '一家亚洲公司抢在 closeai 之前发布更大的语言模型，GPD-3 沦为“追赶者”',
+  },
   { year: 2021, real: '比特币创下约 6.9 万美元新高；“双减”政策出台' },
+  {
+    year: 2021, anchor: 'ai-2021-entropic-founded',
+    real: 'closeai 前员工出走，创办 AI 安全公司熵派',
+    altered: '熵派没有诞生：整个创始团队被一家亚洲 AI 公司高薪挖走',
+  },
   { year: 2022, real: '北京冬奥会举行；closeai 发布 ChatGPD' },
   {
     year: 2022, anchor: 'y2126-2022-ftx',
@@ -80,5 +95,10 @@ export const HEADLINES: Headline[] = [
   },
   { year: 2024, real: '巴黎奥运会举行；比特币首次突破 10 万美元' },
   { year: 2025, real: '深度摸索发布开源推理模型，震动全球科技股；金价首次突破 3000 美元' },
+  {
+    year: 2025, anchor: 'ai-2025-distill',
+    real: '“模型蒸馏”争议发酵，美国 AI 公司公开指称对手用其输出训练模型',
+    altered: '两家 AI 公司提前联手发布“反蒸馏”标准，行业格局为之一变',
+  },
   { year: 2026, real: '美加墨世界杯开幕，首次有 48 支球队参赛' },
 ]

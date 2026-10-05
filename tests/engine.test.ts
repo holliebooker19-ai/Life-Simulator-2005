@@ -222,3 +222,15 @@ describe('世界状态与科技树（P3）', () => {
     expect(influenceIncome(s)).toBeGreaterThan(base + 5)
   })
 })
+
+describe('annual 事件', () => {
+  it('每年都触发，不进随机池', () => {
+    const s = newState(); s.year = 2030; s.age = 32
+    const ev = { id: 'rep', category: 'world' as const, annual: true, title: 't', text: 't', requires: { minYear: 2027 } }
+    expect(pickEvents(s, [ev], () => 0.5, 2).map((e) => e.id)).toEqual(['rep'])
+    s.seen.add('rep'); s.year = 2031
+    expect(pickEvents(s, [ev], () => 0.5, 2).map((e) => e.id)).toEqual(['rep'])
+    s.year = 2020
+    expect(pickEvents(s, [ev], () => 0.5, 2)).toHaveLength(0)
+  })
+})

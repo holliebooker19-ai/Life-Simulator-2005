@@ -14,10 +14,14 @@ export const worldEvents: GameEvent[] = [
     choices: [
       {
         text: '投资他们，并要求写入“开源”条款',
-        outcomes: [{ text: '你成了早期金主之一，世界的 AI 格局因为你的一纸条款发生了偏移。', effects: { stats: { influence: 20, fame: 15, wealth: 2000 }, alter: [{ id: 'world-ai-lab', scale: 20 }], world: { 'tech-ai': 1 }, addFlags: ['ai-opensource'] } }],
+        outcomes: [{ text: '你成了早期金主之一，世界的 AI 格局因为你的一纸条款发生了偏移。', effects: { stats: { influence: 20, fame: 15, wealth: 2000 }, alter: [{ id: 'world-ai-lab', scale: 20 }], world: { 'ai-closeai': 5, 'ai-cn': 5 }, addFlags: ['ai-opensource'] } }],
       },
       { text: '跟着赚一笔就走', outcomes: [{ text: '你赚了一笔不小的钱。', effects: { stats: { wealth: 800 } } }] },
-      { text: '自己创业做竞品', outcomes: [{ text: '你创立了熵派（Entropic），和 closeai 展开了激烈竞争。', effects: { stats: { influence: 15, fame: 10, wealth: -500 }, alter: [{ id: 'world-ai-lab', scale: 15 }], world: { 'tech-ai': 1 }, addFlags: ['ai-founder'] } }] },
+      {
+        text: '自己创业做竞品',
+        requires: { notFlags: ['ai-company'] },
+        outcomes: [{ text: '你拿着这笔钱在东京注册了自己的 AI 公司，和 closeai 正面竞争。业内开始流传一个新名字——你的。', effects: { stats: { influence: 15, fame: 10, wealth: -500 }, alter: [{ id: 'world-ai-lab', scale: 15 }], world: { 'ai-player': 15, 'ai-closeai': -5 }, addFlags: ['ai-founder', 'ai-company', 'ai-japan', 'has-business'] } }],
+      },
     ],
   },
   {

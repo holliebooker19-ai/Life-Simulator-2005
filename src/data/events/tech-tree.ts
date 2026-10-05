@@ -29,6 +29,7 @@ export const techTreeEvents: GameEvent[] = [
           { weight: 2, requires: { worldMax: { 'tech-robot': 4 } }, text: '这次是真的：人形机器人开始在工厂里成批上岗。', effects: { world: { 'tech-robot': 1 }, stats: { intelligence: 1 } } },
           { weight: 1, requires: { worldMax: { 'tech-space': 4 } }, text: '这次是真的：一枚可回收的重型火箭把补给送上了月球。', effects: { world: { 'tech-space': 1 }, stats: { intelligence: 1 } } },
           { weight: 1, requires: { worldMax: { 'tech-brain': 4 } }, text: '这次是真的：瘫痪的志愿者用脑机接口打出了一句完整的话。', effects: { world: { 'tech-brain': 1 }, stats: { intelligence: 1 } } },
+          { weight: 2, requires: { worldMax: { 'tech-ai': 4 } }, text: '这次是真的：大模型又学会了一项人类以为只有自己会的本事。', effects: { world: { 'tech-ai': 1 }, stats: { intelligence: 1 } } },
           { weight: 3, text: '又是融资通稿。你笑了笑，划走了。', effects: { stats: { intelligence: 1 } } },
         ],
       },

@@ -44,6 +44,14 @@ export const studyActions: GameAction[] = [
     ],
   },
   {
+    id: 'act-learn-japanese', group: 'study', text: '学日语', hint: '为去日本发展做准备',
+    requires: { minAge: 12, notFlags: ['skill-japanese'] },
+    outcomes: [
+      { weight: 2, text: '你从五十音背起，一年后已经能看懂没有字幕的动画了。', effects: { stats: { intelligence: 2, happiness: 2 }, addFlags: ['skill-japanese'] } },
+      { weight: 1, text: '敬语把你绕晕了，不过日常对话已经没问题。', effects: { stats: { intelligence: 1 }, addFlags: ['skill-japanese'] } },
+    ],
+  },
+  {
     id: 'act-night-class', group: 'study', text: '在职进修/考证', hint: '成年人的学习',
     requires: { minAge: 23, maxAge: 60 },
     cooldown: 1,

@@ -14,6 +14,8 @@ import type { GameAction } from '../../types'
  * - retired：60 岁退休（由引擎年度结算写入）
  * - health-chronic：慢性病（events/health.ts）
  * - has-foundation：成立了基金会（每年自然获得影响力）
+ * - skill-japanese：会日语（AI 公司在日本注册更顺利）
+ * - ai-candidate / ai-company：想做 / 拥有 AI 公司（主线见 events/ai-mainline.ts）
  */
 const modules = import.meta.glob<Record<string, unknown>>(['./*.ts', '!./index.ts'], { eager: true })
 

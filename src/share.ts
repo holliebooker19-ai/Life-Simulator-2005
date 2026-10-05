@@ -34,6 +34,7 @@ export function renderShareImage(s: GameState, e: Ending): string {
     `财富：${formatWealth(s.stats.wealth)}`,
     `名望 ${Math.round(s.stats.fame)}  影响力 ${Math.round(s.stats.influence)}`,
     `世界线偏离度：${Math.round(s.divergence)}%`,
+    `综合得分：${e.score}`,
   ]
   lines.forEach((l, i) => g.fillText(l, 48, 500 + i * 56))
 

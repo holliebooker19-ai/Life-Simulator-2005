@@ -2,8 +2,9 @@ import { bannerEl, heroEl } from './art'
 import { formatWealth } from './engine'
 import { ORIGINS, TALENTS } from './data/talents'
 import { ALLOC_MAX, ALLOC_STATS, drawOrigin, drawTalent, runGame, START_POINTS, START_REROLLS, type Host } from './game'
+import { clearSave, loadGame, saveGame } from './save'
 import { renderShareImage } from './share'
-import type { ActionGroup, Choice, GameAction, GameEvent, GameState, Origin, Outcome, Rarity, StatKey, Talent } from './types'
+import type { ActionGroup, Choice, EndingDim, GameAction, GameEvent, GameState, Origin, Outcome, Rarity, StatKey, Talent } from './types'
 
 const app = document.getElementById('app')!
 
@@ -29,8 +30,14 @@ export function showTitle(): void {
   const box = h('div', 'screen center hero')
   box.append(heroEl(), h('h1', 'title', '1998重生'), h('p', 'sub', '带着 2026 年的记忆，回到 1998 年出生的那一天。'))
   const btn = h('button', 'btn big', '开始重生')
-  btn.onclick = () => showDraw()
+  btn.onclick = () => { clearSave(); showDraw() }
   box.append(btn)
+  const saved = loadGame()
+  if (saved?.alive && saved.origin) {
+    const cont = h('button', 'btn', `继续上一局（${saved.year} 年 · ${saved.age} 岁）`)
+    cont.onclick = () => startGame(saved.origin!, saved.talents, {}, saved)
+    box.append(cont)
+  }
   app.append(box)
 }
 
@@ -141,7 +148,7 @@ const STAT_LABELS: [StatKey, string][] = [
   ['fame', '名望'], ['influence', '影响力'], ['memory', '记忆'], ['wealth', '财富'],
 ]
 
-async function startGame(origin: Origin, talents: Talent[], alloc: Record<string, number>): Promise<void> {
+async function startGame(origin: Origin, talents: Talent[], alloc: Record<string, number>, resume?: GameState): Promise<void> {
   app.replaceChildren()
   const wrap = h('div', 'game')
   const panel = h('aside', 'panel')
@@ -214,8 +221,16 @@ async function startGame(origin: Origin, talents: Talent[], alloc: Record<string
     reveal()
   })
 
+  // 继续上一局时，把之前的日志重新铺出来
+  for (const e of resume?.log ?? []) {
+    const line = h('div', `log-line ${e.rarity ?? 'common'} old`)
+    line.append(h('b', '', `${e.year}（${e.age}岁）${e.title}`), h('p', '', e.text))
+    line.onclick = () => line.classList.toggle('open')
+    log.append(line)
+  }
+
   const host: Host = {
-    onYear: sync,
+    onYear(s) { sync(s); saveGame(s) },
     async showAuto(ev, s) {
       addLog(s, ev, ev.text)
       reveal()
@@ -280,14 +295,30 @@ async function startGame(origin: Origin, talents: Talent[], alloc: Record<string
     },
   }
 
-  const { state, ending } = await runGame(origin, talents, host, Math.random, alloc)
+  const { state, ending } = await runGame(origin, talents, host, Math.random, alloc, resume)
+  clearSave()
   showEnding(state, ending)
+}
+
+const DIM_LABEL: Record<EndingDim, string> = {
+  wealth: '财富', influence: '影响力', world: '世界线', family: '家庭', joy: '幸福', longevity: '寿命',
 }
 
 function showEnding(s: GameState, e: ReturnType<typeof import('./engine').computeEnding>): void {
   app.replaceChildren()
   const box = h('div', 'screen center')
   box.append(h('div', `grade g-${e.grade}`, e.grade), h('h2', '', e.title), h('p', '', e.summary))
+  const dims = h('div', 'dims')
+  for (const k of Object.keys(DIM_LABEL) as EndingDim[]) {
+    const row = h('div', 'dim')
+    const bar = h('div', 'dim-bar')
+    const fill = h('i')
+    fill.style.width = `${Math.round(e.dims[k])}%`
+    bar.append(fill)
+    row.append(h('span', '', DIM_LABEL[k]), bar, h('b', '', String(Math.round(e.dims[k]))))
+    dims.append(row)
+  }
+  box.append(dims, h('p', 'sub', `综合得分 ${e.score}`))
   const img = h('img', 'share') as HTMLImageElement
   img.src = renderShareImage(s, e)
   const bar = h('div', 'bar')

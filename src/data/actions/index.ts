@@ -11,6 +11,8 @@ import type { GameAction } from '../../types'
  * - has-business：有自己的小生意（解锁扩张、转让）
  * - employed / side-gig：有工作/兼职
  * - own-house / best-friend：买了房 / 有挚友
+ * - retired：60 岁退休（由引擎年度结算写入）
+ * - health-chronic：慢性病（events/health.ts）
  */
 const modules = import.meta.glob<Record<string, unknown>>(['./*.ts', '!./index.ts'], { eager: true })
 

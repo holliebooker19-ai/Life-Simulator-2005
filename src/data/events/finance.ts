@@ -9,7 +9,7 @@ export const financeEvents: GameEvent[] = [
     requires: { minAge: 4 },
     title: '2010 年世界杯',
     text: '夏天，爸爸和叔叔们围着电视，边看球边打赌：谁是冠军？你记得，冠军是……',
-    realFact: '2010 年南非世界杯冠军为西班牙，决赛 1:0 胜荷兰，加时赛补时伊涅斯塔破门。',
+    realFact: '2010 年南非世界杯冠军为西班牙，决赛 1:0 胜荷兰，加时赛第 116 分钟西班牙中场破门制胜。',
     choices: [
       {
         text: '大声说“西班牙！”',
@@ -74,7 +74,7 @@ export const financeEvents: GameEvent[] = [
         ],
       },
       { text: '小注怡情', outcomes: [{ text: '你小赚一笔，请朋友们吃了顿火锅。', effects: { stats: { wealth: 20, happiness: 5 } } }] },
-      { text: '不碰赌博', outcomes: [{ text: '你安静看球，只是为梅西落了一次泪。', effects: { stats: { happiness: 3 } } }] },
+      { text: '不碰赌博', outcomes: [{ text: '你安静看球，只是为那位阿根廷十号落了一次泪。', effects: { stats: { happiness: 3 } } }] },
     ],
   },
 ]

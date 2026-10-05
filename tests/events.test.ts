@@ -6,7 +6,7 @@ import { EXTRA_CHOICES } from '../src/data/extra-choices'
 import { availableActions, markAction, newState, withExtraChoices } from '../src/engine'
 
 // 真实人名/公司名黑名单：出现即说明没有按 docs/NAMING.md 改名
-const FORBIDDEN = ['马斯克', 'Musk', 'OpenAI', 'Anthropic', 'Twitter', '推特', 'ChatGPT', 'Claude', '特朗普', 'Trump', '习近平', '普京', '拜登', '奥巴马', 'Putin', 'Biden', 'Obama']
+const FORBIDDEN = ['马斯克', 'Musk', 'OpenAI', 'Anthropic', 'Twitter', '推特', 'ChatGPT', 'Claude', '特朗普', 'Trump', '习近平', '普京', '拜登', '奥巴马', 'Putin', 'Biden', 'Obama', '梅西', '伊涅斯塔', 'C罗']
 
 /** 从改名表（docs/NAMING.md 与 docs/naming/*.md）自动提取“现实”列，作为额外黑名单 */
 function namingForbidden(): string[] {

@@ -1,12 +1,17 @@
 import type {
-  Choice, GameAction, Condition, Effects, Ending, GameEvent, GameState, Origin, Outcome, Stats, StatKey, Talent,
+  Choice, GameAction, Condition, Effects, Ending, EndingDim, GameEvent, GameState, Origin, Outcome, Stats, StatKey, Talent, YearBill,
 } from './types'
 import { weightedPick, type Rng } from './rng'
 
 export const BIRTH_YEAR = 1998
 /** 现实记忆的终点：之后不再有“预知”，进入自行经营世界线阶段 */
 export const MEMORY_END_YEAR = 2026
-export const MAX_AGE = 70
+/** 默认寿命上限；科技树（基因工程等）可以通过 state.maxAge 提高 */
+export const MAX_AGE = 100
+/** 除财富外的属性上限 */
+export const STAT_CAP = 100
+/** 每年最多触发的固定年份事件数，超出的按稀有度取舍 */
+export const MAX_FIXED_PER_YEAR = 4
 
 export function newState(): GameState {
   return {
@@ -22,6 +27,9 @@ export function newState(): GameState {
     talents: [],
     origin: null,
     log: [],
+    maxAge: MAX_AGE,
+    joySum: 0,
+    joyYears: 0,
   }
 }
 
@@ -48,7 +56,7 @@ export function divergenceOf(s: GameState): number {
 
 function clampStats(st: Stats): void {
   const keys: StatKey[] = ['intelligence', 'charm', 'health', 'happiness', 'fame', 'influence', 'memory']
-  for (const k of keys) st[k] = Math.min(150, Math.max(k === 'health' ? -999 : 0, st[k]))
+  for (const k of keys) st[k] = Math.min(STAT_CAP, Math.max(k === 'health' ? -999 : 0, st[k]))
 }
 
 export function meets(s: GameState, c?: Condition): boolean {
@@ -78,7 +86,14 @@ export function applyTalentOrigin(s: GameState, talents: Talent[], origin: Origi
 /** 选出本年要触发的事件：先固定年份事件，再按权重抽随机事件 */
 export function pickEvents(s: GameState, pool: GameEvent[], rng: Rng, maxRandom = 1): GameEvent[] {
   const available = pool.filter((e) => (e.once === false || !s.seen.has(e.id)) && meets(s, e.requires))
-  const fixed = available.filter((e) => e.year === s.year)
+  // 同一年固定事件太多会让节奏拥挤：按稀有度保留前 MAX_FIXED_PER_YEAR 个（同稀有度保持原顺序）
+  const fixed = available
+    .filter((e) => e.year === s.year)
+    .map((e, i) => ({ e, i }))
+    .sort((a, b) => RARITY_RANK[b.e.rarity ?? 'common'] - RARITY_RANK[a.e.rarity ?? 'common'] || a.i - b.i)
+    .slice(0, MAX_FIXED_PER_YEAR)
+    .sort((a, b) => a.i - b.i)
+    .map((x) => x.e)
   const randoms: GameEvent[] = []
   const candidates = available.filter((e) => e.year === undefined && s.age >= 0)
   for (let i = 0; i < maxRandom; i++) {
@@ -87,6 +102,8 @@ export function pickEvents(s: GameState, pool: GameEvent[], rng: Rng, maxRandom 
   }
   return [...fixed, ...randoms]
 }
+
+const RARITY_RANK = { common: 0, rare: 1, legendary: 2 } as const
 
 function eventWeight(e: GameEvent): number {
   const base = e.weight ?? 10
@@ -175,39 +192,148 @@ export function pushLog(s: GameState, title: string, text: string, rarity?: Game
   s.log.push({ year: s.year, age: s.age, title, text, rarity })
 }
 
-/** 年度结算：自然变化、死亡判定。返回 true 表示继续 */
-export function endYear(s: GameState): boolean {
+/**
+ * 年度账单：成年后每年结算收入与开销（单位万元），写入财富。
+ * 18 岁前由父母负担；上大学期间只有少量生活费。
+ */
+export function settleYear(s: GameState): YearBill {
+  const bill: YearBill = { income: 0, expense: 0, lines: [] }
+  const st = s.stats
+  const f = s.flags
+  const add = (label: string, v: number) => {
+    const n = Math.round(v * 10) / 10
+    if (!n) return
+    if (n > 0) bill.income += n
+    else bill.expense -= n
+    bill.lines.push(`${label} ${n > 0 ? '+' : ''}${Math.abs(n) < 10 ? `${n}万` : formatWealth(n)}`)
+  }
+  if (s.age >= 60 && f.has('employed')) {
+    f.delete('employed')
+    f.add('retired')
+  }
+  if (s.age >= 18) {
+    if (f.has('employed')) add('工资', 5 + st.intelligence * 0.12 + st.influence * 0.05)
+    if (f.has('has-business')) add('生意', 8 + st.fame * 0.15 + st.influence * 0.1)
+    if (f.has('side-gig') && !f.has('employed')) add('兼职', 1)
+    if (f.has('retired')) add('退休金', 4)
+    if (st.wealth > 0) add('理财收益', st.wealth * 0.02)
+  }
+  const student = s.age < 22 && f.has('y1620-in-college')
+  const independent = s.age >= 22 || (s.age >= 18 && !student)
+  if (student) add('生活费', -1)
+  if (independent) {
+    add('生活开销', -(3 + (st.wealth > 100 ? st.wealth * 0.01 : 0)))
+    if (!f.has('own-house')) add('房租', -2)
+    if (f.has('has-child')) add('养孩子', -3)
+    if (s.age >= 60) add('医疗', -(s.age - 55) * 0.2)
+  }
+  st.wealth += bill.income - bill.expense
+  if (st.wealth < 0 && independent) {
+    st.happiness -= 3
+    bill.lines.push('负债压力 快乐-3')
+  }
+  return bill
+}
+
+/** 快乐的基准值：感情、家庭、住房、工作、健康决定一个人“平常”有多开心 */
+export function joyBaseline(s: GameState): number {
+  const f = s.flags
+  let b = 50
+  if (f.has('married')) b += 12
+  else if (f.has('partner')) b += 8
+  if (f.has('has-child')) b += 5
+  if (f.has('own-house')) b += 4
+  if (f.has('best-friend')) b += 4
+  if (f.has('employed') || f.has('has-business') || f.has('retired')) b += 3
+  if (s.stats.health < 30) b -= 10
+  if (s.stats.wealth < 0 && s.age >= 22) b -= 8
+  return b
+}
+
+/** 年度自然变化：快乐回落到基准、名望与影响力回落、衰老 */
+export function yearlyDrift(s: GameState): void {
+  const st = s.stats
+  if (s.age >= 7) st.happiness += Math.round((joyBaseline(s) - st.happiness) * 0.25)
+  if (s.age > 40) st.charm -= 1
+  if (s.age > 60) st.intelligence -= 1
+  if (s.age > 35) st.health -= (s.age - 35) * 0.12 * (s.flags.has('fit') ? 0.6 : 1)
+  // 名望会被淡忘、影响力需要经营：每年按比例回落，想维持就得持续投入
+  st.fame -= st.fame * 0.06
+  st.influence -= st.influence * 0.04
+  clampStats(st)
+  s.joySum += st.happiness
+  s.joyYears += 1
+}
+
+/** 当年死亡概率：随年龄指数上升，体质越差越高 */
+export function mortality(age: number, health: number): number {
+  const hf = health >= 80 ? 0.6 : health >= 60 ? 0.9 : health >= 40 ? 1.4 : health >= 20 ? 2.5 : 5
+  return Math.min(1, 0.0008 * Math.exp(0.085 * (age - 30)) * hf)
+}
+
+/** 年度结算：自然变化、长一岁、死亡判定。返回 true 表示继续 */
+export function endYear(s: GameState, rng: Rng = Math.random): boolean {
+  yearlyDrift(s)
   s.age += 1
   s.year += 1
-  // 年龄带来的自然健康衰减
-  if (s.age > 45) s.stats.health -= Math.floor((s.age - 40) / 8)
-  if (s.stats.health <= 0 || s.age >= MAX_AGE) {
+  if (s.stats.health <= 0 || s.age >= s.maxAge || rng() < mortality(s.age, s.stats.health)) {
     s.alive = false
     return false
   }
   return true
 }
 
+/** 结局六维评分（0-100），总分加权 */
+export function endingDims(s: GameState): Record<EndingDim, number> {
+  const f = s.flags
+  const family =
+    (f.has('married') ? 30 : f.has('partner') ? 15 : 0) + (f.has('has-child') ? 25 : 0) +
+    (f.has('best-friend') ? 15 : 0) + (f.has('parents-trust') ? 10 : 0) + (f.has('own-house') ? 10 : 0)
+  return {
+    wealth: clamp(Math.log10(Math.max(1, s.stats.wealth)) * 12.5, 0, 100),
+    influence: clamp(s.stats.influence, 0, 100),
+    world: clamp(s.divergence, 0, 100),
+    family: clamp(family, 0, 100),
+    joy: clamp(s.joyYears ? s.joySum / s.joyYears : s.stats.happiness, 0, 100),
+    longevity: clamp((s.age - 50) * 2, 0, 100),
+  }
+}
+
+const DIM_WEIGHT: Record<EndingDim, number> = { wealth: 0.25, influence: 0.2, world: 0.15, family: 0.15, joy: 0.15, longevity: 0.1 }
+
 export function computeEnding(s: GameState): Ending {
   const w = s.stats.wealth
-  const score =
-    Math.log10(Math.max(1, w)) * 12 + s.stats.fame * 0.6 + s.stats.influence * 0.9 + s.divergence * 0.3 + s.stats.happiness * 0.3
-  const worldChanged = s.divergence >= 60 && s.stats.influence >= 60
+  const dims = endingDims(s)
+  const score = Math.round((Object.keys(dims) as EndingDim[]).reduce((a, k) => a + dims[k] * DIM_WEIGHT[k], 0))
   let grade: Ending['grade'] = 'D'
-  if (score >= 140) grade = 'S'
-  else if (score >= 100) grade = 'A'
-  else if (score >= 65) grade = 'B'
-  else if (score >= 35) grade = 'C'
+  if (score >= 70) grade = 'S'
+  else if (score >= 55) grade = 'A'
+  else if (score >= 42) grade = 'B'
+  else if (score >= 30) grade = 'C'
 
-  let title = '平凡但真实的一生'
-  if (worldChanged) title = '改写历史的人'
-  else if (w >= 100000) title = '首富之路'
-  else if (s.stats.health <= 0 && s.age < 30) title = '重生又重逝'
-  else if (s.stats.happiness >= 90) title = '知足常乐'
-  else if (w < 0) title = '负债人生'
-
+  const f = s.flags
+  const lonely = !f.has('married') && !f.has('partner') && !f.has('best-friend')
+  const common = s.origin?.rarity === 'common'
+  // 称号按优先级取第一个满足的
+  const titles: [boolean, string][] = [
+    [s.divergence >= 60 && s.stats.influence >= 60, '改写历史的人'],
+    [w >= 100000, '首富之路'],
+    [s.divergence >= 30 && s.stats.fame < 30, '隐形的推手'],
+    [s.age < 30, '重生又重逝'],
+    [s.stats.fame >= 80, '一代传奇'],
+    [w >= 10000 && common, '白手起家'],
+    [w >= 10000, '富甲一方'],
+    [s.age >= 100, '百岁人瑞'],
+    [w < 0, '负债人生'],
+    [s.age < 50, '英年早逝'],
+    [f.has('married') && f.has('has-child') && dims.joy >= 60, '儿孙满堂'],
+    [lonely && s.stats.fame >= 30, '孤独的先知'],
+    [dims.joy >= 72, '知足常乐'],
+    [w >= 500, '小富即安'],
+  ]
+  const title = titles.find(([ok]) => ok)?.[1] ?? '平凡但真实的一生'
   const summary = `享年 ${s.age} 岁（${BIRTH_YEAR}—${s.year}）。财富 ${formatWealth(w)}，世界线偏离度 ${Math.round(s.divergence)}%。`
-  return { grade, title, summary }
+  return { grade, title, summary, dims, score }
 }
 
 export function formatWealth(wan: number): string {

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { actionPoints, pacing, applyEffects, endYear, meets, memoryReliability, newState, resolveChoice } from '../src/engine'
+import {
+  actionPoints, pacing, applyEffects, computeEnding, endYear, joyBaseline, meets, memoryReliability, mortality, newState, pickEvents,
+  resolveChoice, settleYear, yearlyDrift,
+} from '../src/engine'
+import { deserialize, serialize } from '../src/save'
 
 describe('engine', () => {
   it('偏离度越高，记忆越不可靠', () => {
@@ -89,5 +93,80 @@ describe('世界线：只有改写锚点才产生偏离', () => {
     applyEffects(s, { alter: [{ id: 'a', scale: 3 }] })
     expect(meets(s, { notAltered: ['a'] })).toBe(false)
     expect(meets(s, { altered: ['a'] })).toBe(true)
+  })
+})
+
+describe('写实人生（P1）', () => {
+  it('属性上限 100，财富不设上限', () => {
+    const s = newState()
+    applyEffects(s, { stats: { charm: 500, wealth: 999999 } })
+    expect(s.stats.charm).toBe(100)
+    expect(s.stats.wealth).toBe(999999)
+  })
+
+  it('快乐每年向基准值回落', () => {
+    const s = newState(); s.age = 20; s.stats.happiness = 100
+    yearlyDrift(s)
+    expect(s.stats.happiness).toBeLessThan(100)
+    expect(s.stats.happiness).toBeGreaterThan(joyBaseline(s))
+    const sad = newState(); sad.age = 20; sad.stats.happiness = 0
+    yearlyDrift(sad)
+    expect(sad.stats.happiness).toBeGreaterThan(0)
+  })
+
+  it('死亡概率随年龄上升、体质越差越高', () => {
+    expect(mortality(80, 70)).toBeGreaterThan(mortality(40, 70))
+    expect(mortality(70, 10)).toBeGreaterThan(mortality(70, 90))
+  })
+
+  it('寿命上限由 maxAge 决定，可被科技树提高', () => {
+    const s = newState(); s.age = 99; s.year = 2097; s.stats.health = 100
+    expect(endYear(s, () => 1)).toBe(false)
+    const t = newState(); t.age = 99; t.year = 2097; t.stats.health = 100; t.maxAge = 150
+    expect(endYear(t, () => 1)).toBe(true)
+  })
+
+  it('年度账单：成年后结算工资与开销，未成年不结算', () => {
+    const kid = newState(); kid.age = 10
+    expect(settleYear(kid).lines).toHaveLength(0)
+    const s = newState(); s.age = 25; s.flags.add('employed')
+    const w = s.stats.wealth
+    const bill = settleYear(s)
+    expect(bill.income).toBeGreaterThan(0)
+    expect(bill.expense).toBeGreaterThan(0)
+    expect(s.stats.wealth).toBeCloseTo(w + bill.income - bill.expense)
+  })
+
+  it('60 岁退休：工作换成退休金', () => {
+    const s = newState(); s.age = 60; s.flags.add('employed')
+    settleYear(s)
+    expect(s.flags.has('employed')).toBe(false)
+    expect(s.flags.has('retired')).toBe(true)
+  })
+
+  it('同一年固定事件最多 4 个，优先保留稀有的', () => {
+    const s = newState(); s.year = 2016; s.age = 18
+    const mk = (id: string, rarity?: 'rare' | 'legendary') => ({ id, category: 'world' as const, year: 2016, rarity, title: id, text: id })
+    const pool = [mk('a'), mk('b'), mk('c'), mk('d', 'rare'), mk('e', 'legendary'), mk('f')]
+    const ids = pickEvents(s, pool, () => 0.5, 0).map((e) => e.id)
+    expect(ids).toEqual(['a', 'b', 'd', 'e'])
+  })
+
+  it('结局：六维评分，乱玩不该轻易拿 S', () => {
+    const s = newState(); s.age = 70; s.year = 2068
+    const e = computeEnding(s)
+    expect(Object.keys(e.dims)).toHaveLength(6)
+    expect(e.grade).not.toBe('S')
+  })
+})
+
+describe('存档', () => {
+  it('序列化后能还原 Set 字段', () => {
+    const s = newState(); s.flags.add('employed'); s.seen.add('x'); s.altered.a = 3
+    const back = deserialize(serialize(s))!
+    expect(back.flags.has('employed')).toBe(true)
+    expect(back.seen.has('x')).toBe(true)
+    expect(back.altered).toEqual({ a: 3 })
+    expect(deserialize('not json')).toBeNull()
   })
 })

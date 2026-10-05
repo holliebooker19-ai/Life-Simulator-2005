@@ -3,8 +3,8 @@ import { ALL_EVENTS } from './data/events'
 import { EXTRA_CHOICES } from './data/extra-choices'
 import { ORIGINS, TALENTS } from './data/talents'
 import {
-  applyEffects, applyTalentOrigin, availableActions, computeEnding, endYear, markAction, meets, newState,
-  pacing, pickEvents, pushLog, resolveChoice, withExtraChoices,
+  applyEffects, applyTalentOrigin, availableActions, computeEnding, endYear, formatWealth, markAction, meets, newState,
+  pacing, pickEvents, pushLog, resolveChoice, settleYear, withExtraChoices,
 } from './engine'
 import { weightedPick, type Rng } from './rng'
 import type { Choice, Ending, GameAction, GameEvent, GameState, Origin, Outcome, Rarity, StatDelta, Talent } from './types'
@@ -54,10 +54,17 @@ function actionEvent(a: GameAction): GameEvent {
   return { id: a.id, category: 'life', title: a.text, text: a.hint ?? '' }
 }
 
-export async function runGame(origin: Origin, talents: Talent[], host: Host, rng: Rng = Math.random, bonus: StatDelta = {}): Promise<{ state: GameState; ending: Ending }> {
-  const s = newState()
-  applyTalentOrigin(s, talents, origin)
-  applyEffects(s, { stats: bonus })
+/**
+ * 跑完一整局。传入 resume 时从存档的年初继续（忽略 origin/talents/bonus）。
+ */
+export async function runGame(
+  origin: Origin, talents: Talent[], host: Host, rng: Rng = Math.random, bonus: StatDelta = {}, resume?: GameState,
+): Promise<{ state: GameState; ending: Ending }> {
+  const s = resume ?? newState()
+  if (!resume) {
+    applyTalentOrigin(s, talents, origin)
+    applyEffects(s, { stats: bonus })
+  }
   host.onYear(s)
 
   while (s.alive) {
@@ -92,7 +99,14 @@ export async function runGame(origin: Origin, talents: Talent[], host: Host, rng
       if (s.stats.health <= 0) { s.alive = false; break }
     }
     if (!s.alive) break
-    if (!endYear(s)) break
+    const bill = settleYear(s)
+    if (bill.lines.length) {
+      const net = bill.income - bill.expense
+      const text = `${bill.lines.join('，')}。净${net >= 0 ? '收入' : '支出'} ${formatWealth(Math.abs(net))}。`
+      pushLog(s, '年度账单', text)
+      await host.showAuto({ id: 'year-bill', category: 'life', title: '年度账单', text }, s)
+    }
+    if (!endYear(s, rng)) break
     host.onYear(s)
   }
   return { state: s, ending: computeEnding(s) }

@@ -16,6 +16,7 @@
 - `usesMemory: true` 的选项必须包含 `tag: 'success'` 与 `tag: 'misremember'`（或 `'fail'`）结果。
 - 赌博/随机：同一选项里写多个 `outcomes` 并配 `weight`。
 - `rarity`：`common` 日常；`rare` 小高光；`legendary` 改变人生/世界线，数量要克制。
+- 属性上限 100（财富除外），`statMin/statMax` 门槛不要超过 100；名望和影响力每年会回落，一次性奖励不宜过大。
 - 数值参考：`wealth` 单位是万元；普通小赚 5–50，大赚 500–5000，首富级 100000+；
   `alter.scale`：小改动 1~5，大改动 10~25（见“世界线”）。
 

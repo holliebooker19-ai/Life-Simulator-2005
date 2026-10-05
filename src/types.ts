@@ -1,4 +1,4 @@
-/** 玩家属性。除 wealth 外范围均为 0-100（可溢出显示，但判定时 clamp） */
+/** 玩家属性。除 wealth 外范围均为 0-100（引擎会 clamp 到 0-100，health 允许降到 0 以下表示死亡） */
 export interface Stats {
   intelligence: number // 智力
   charm: number // 魅力
@@ -144,6 +144,18 @@ export interface GameState {
   talents: Talent[]
   origin: Origin | null
   log: LogEntry[]
+  /** 寿命上限，默认 100；以后由科技树（如基因工程）提高 */
+  maxAge: number
+  /** 一生快乐值累计，用于结局的“幸福”维度 */
+  joySum: number
+  joyYears: number
+}
+
+/** 年度账单：每年年底结算的收入与开销，单位万元 */
+export interface YearBill {
+  income: number
+  expense: number
+  lines: string[]
 }
 
 export interface LogEntry {
@@ -154,8 +166,13 @@ export interface LogEntry {
   rarity?: Rarity
 }
 
+export type EndingDim = 'wealth' | 'influence' | 'world' | 'family' | 'joy' | 'longevity'
+
 export interface Ending {
   grade: 'S' | 'A' | 'B' | 'C' | 'D'
   title: string
   summary: string
+  /** 六个维度的得分 0-100 */
+  dims: Record<EndingDim, number>
+  score: number
 }

@@ -135,3 +135,10 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, 
   .draw .card-n { font-size:15px; }
   .draw .card-d { font-size:12px; line-height:1.4; }
 }
+
+/* 结局六维 */
+.dims { width: 100%; max-width: 420px; margin: 12px auto; display: grid; gap: 6px; }
+.dim { display: grid; grid-template-columns: 4em 1fr 2.5em; align-items: center; gap: 8px; font-size: 14px; }
+.dim-bar { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.dim-bar i { display: block; height: 100%; background: var(--gold); }
+.dim b { text-align: right; }

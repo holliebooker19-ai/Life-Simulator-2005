@@ -82,9 +82,26 @@ function eventWeight(e: GameEvent): number {
   return e.rarity === 'legendary' ? base * 0.2 : e.rarity === 'rare' ? base * 0.5 : base
 }
 
-/** 每年可用的行动点数：小时候少，成年后多 */
+/**
+ * 各年龄段的节奏。要调快/调慢某个阶段，只改这张表。
+ * 0–6 岁是“襁褓期”：只走现实锚点事件，不弹行动菜单、不加自由发挥选项，结果自动继续。
+ */
+export interface Pacing {
+  randomEvents: number // 每年随机事件数
+  actionPoints: number // 每年行动点
+  extraChoices: number // 事件里追加的自由发挥选项数
+  autoAdvance: boolean // 事件结果是否自动继续（不用点“继续”）
+}
+
+export function pacing(s: GameState): Pacing {
+  if (s.age < 3) return { randomEvents: 0, actionPoints: 0, extraChoices: 0, autoAdvance: true }
+  if (s.age < 7) return { randomEvents: 1, actionPoints: 0, extraChoices: 0, autoAdvance: true }
+  if (s.age < 18) return { randomEvents: 2, actionPoints: 2, extraChoices: 2, autoAdvance: false }
+  return { randomEvents: 2, actionPoints: 3, extraChoices: 2, autoAdvance: false }
+}
+
 export function actionPoints(s: GameState): number {
-  return s.age < 6 ? 1 : s.age < 18 ? 2 : 3
+  return pacing(s).actionPoints
 }
 
 /** 当前能做的行动：满足条件、未超出“一次性”与冷却限制 */

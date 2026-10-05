@@ -1,16 +1,12 @@
 import type { GameEvent } from '../../types'
-import { childhoodEvents } from './childhood'
-import { earlyYearsEvents } from './early-years'
-import { financeEvents } from './finance'
-import { worldEvents } from './world'
 
 /**
- * 新增事件文件后，在这里引入并展开即可。
- * 事件规范见 docs/EVENT_GUIDE.md，PR 前请运行 npm run validate。
+ * 自动注册：本目录下除 index.ts 外的所有 .ts 文件，导出的所有数组都会并入事件池。
+ * 新增事件只需新建文件并 export 一个 GameEvent[]，不用改本文件（避免多人并行时冲突）。
  */
-export const ALL_EVENTS: GameEvent[] = [
-  ...childhoodEvents,
-  ...earlyYearsEvents,
-  ...financeEvents,
-  ...worldEvents,
-]
+const modules = import.meta.glob<Record<string, unknown>>(['./*.ts', '!./index.ts'], { eager: true })
+
+export const ALL_EVENTS: GameEvent[] = Object.keys(modules)
+  .sort()
+  .flatMap((path) => Object.values(modules[path]).filter(Array.isArray) as GameEvent[][])
+  .flat()

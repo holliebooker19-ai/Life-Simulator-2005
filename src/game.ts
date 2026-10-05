@@ -3,13 +3,28 @@ import { ALL_EVENTS } from './data/events'
 import { EXTRA_CHOICES } from './data/extra-choices'
 import { ORIGINS, TALENTS } from './data/talents'
 import {
-  actionPoints, applyEffects, applyTalentOrigin, availableActions, computeEnding, endYear, markAction, meets, newState,
-  pickEvents, pushLog, resolveChoice, withExtraChoices,
+  applyEffects, applyTalentOrigin, availableActions, computeEnding, endYear, markAction, meets, newState,
+  pacing, pickEvents, pushLog, resolveChoice, withExtraChoices,
 } from './engine'
 import { weightedPick, type Rng } from './rng'
-import type { Choice, Ending, GameAction, GameEvent, GameState, Origin, Outcome, Rarity, Talent } from './types'
+import type { Choice, Ending, GameAction, GameEvent, GameState, Origin, Outcome, Rarity, StatDelta, Talent } from './types'
 
 const RARITY_WEIGHT: Record<Rarity, number> = { common: 70, rare: 25, legendary: 5 }
+
+export const ALLOC_STATS = ['intelligence', 'charm', 'health', 'happiness', 'memory'] as const
+/** 开局可自由分配的点数：抽卡模式给得多，手动挑选模式给得少，两者总体平衡 */
+export const START_POINTS = { draw: 20, pick: 8 }
+export const START_REROLLS = 5
+/** 单项属性最多分配多少点 */
+export const ALLOC_MAX = 15
+
+export function drawOrigin(rng: Rng = Math.random): Origin {
+  return weightedPick(ORIGINS, (o) => RARITY_WEIGHT[o.rarity], rng)!
+}
+
+export function drawTalent(exclude: Talent[], rng: Rng = Math.random): Talent {
+  return weightedPick(TALENTS.filter((t) => !exclude.includes(t)), (x) => RARITY_WEIGHT[x.rarity], rng)!
+}
 
 export function drawStart(rng: Rng = Math.random): { origin: Origin; talents: Talent[] } {
   const origin = weightedPick(ORIGINS, (o) => RARITY_WEIGHT[o.rarity], rng)!
@@ -29,7 +44,8 @@ export interface Host {
   showChoice(event: GameEvent, choices: Choice[], state: GameState): Promise<Choice>
   /** 年度自由行动：返回 null 表示“顺其自然”，跳过本年剩余行动点 */
   showActions(state: GameState, actions: GameAction[], points: number): Promise<GameAction | null>
-  showOutcome(event: GameEvent, outcome: Outcome, reliable: boolean | undefined, state: GameState): Promise<void>
+  /** auto 为 true 时不需要玩家点“继续”（襁褓期提速） */
+  showOutcome(event: GameEvent, outcome: Outcome, reliable: boolean | undefined, state: GameState, auto?: boolean): Promise<void>
   onYear(state: GameState): void
 }
 
@@ -38,17 +54,19 @@ function actionEvent(a: GameAction): GameEvent {
   return { id: a.id, category: 'life', title: a.text, text: a.hint ?? '' }
 }
 
-export async function runGame(origin: Origin, talents: Talent[], host: Host, rng: Rng = Math.random): Promise<{ state: GameState; ending: Ending }> {
+export async function runGame(origin: Origin, talents: Talent[], host: Host, rng: Rng = Math.random, bonus: StatDelta = {}): Promise<{ state: GameState; ending: Ending }> {
   const s = newState()
   applyTalentOrigin(s, talents, origin)
+  applyEffects(s, { stats: bonus })
   host.onYear(s)
 
   while (s.alive) {
-    const events = pickEvents(s, ALL_EVENTS, rng, s.age < 6 ? 1 : 2)
+    const pace = pacing(s)
+    const events = pickEvents(s, ALL_EVENTS, rng, pace.randomEvents)
     for (const ev of events) {
       s.seen.add(ev.id)
       const base = ev.choices?.filter((c) => meets(s, c.requires)) ?? []
-      const visible = base.length ? withExtraChoices(s, base, EXTRA_CHOICES, rng) : []
+      const visible = base.length ? withExtraChoices(s, base, EXTRA_CHOICES, rng, pace.extraChoices) : []
       if (!ev.choices || visible.length === 0) {
         applyEffects(s, ev.effects)
         pushLog(s, ev.title, ev.text, ev.rarity)
@@ -58,12 +76,12 @@ export async function runGame(origin: Origin, talents: Talent[], host: Host, rng
         const { outcome, reliable } = resolveChoice(s, choice, rng)
         applyEffects(s, outcome.effects)
         pushLog(s, ev.title, `${choice.text} → ${outcome.text}`, ev.rarity)
-        await host.showOutcome(ev, outcome, reliable, s)
+        await host.showOutcome(ev, outcome, reliable, s, pace.autoAdvance)
       }
       if (s.stats.health <= 0) { s.alive = false; break }
     }
     if (!s.alive) break
-    for (let points = actionPoints(s); points > 0; points--) {
+    for (let points = pace.actionPoints; points > 0; points--) {
       const act = await host.showActions(s, availableActions(s, ALL_ACTIONS), points)
       if (!act) break
       markAction(s, act)

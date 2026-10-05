@@ -1,6 +1,6 @@
 # 事件写作规范
 
-事件放在 `src/data/events/*.ts`，类型见 `src/types.ts`，新文件需在 `src/data/events/index.ts` 注册。
+事件放在 `src/data/events/*.ts`，类型见 `src/types.ts`，新文件会被自动注册（export 一个 `GameEvent[]` 即可，不用改 `index.ts`）。
 
 ## 总体风格
 - 写实为主，偶尔出现可被主角改变的荒谬剧情（世界首富提案、改写世界杯等）。
@@ -25,7 +25,7 @@
 
 ## 提交流程
 1. 先读 `AGENT.md`、`NAMING.md`。
-2. 写事件，注册到 `index.ts`。
+2. 写事件（新建文件即自动注册）。
 3. 运行 `npm run typecheck && npm test && npm run build`（`tests/events.test.ts` 会自动检查 id 唯一、选项完整、真名黑名单）。
 4. PR 描述里列出新增事件数量、涉及的现实事实与出处。
 

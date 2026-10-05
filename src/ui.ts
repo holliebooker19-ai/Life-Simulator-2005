@@ -1,6 +1,7 @@
-import { artEl, eventBanner, heroSvg } from './art'
+import { bannerEl, heroEl } from './art'
 import { formatWealth } from './engine'
-import { drawStart, runGame, type Host } from './game'
+import { ORIGINS, TALENTS } from './data/talents'
+import { ALLOC_MAX, ALLOC_STATS, drawOrigin, drawTalent, runGame, START_POINTS, START_REROLLS, type Host } from './game'
 import { renderShareImage } from './share'
 import type { ActionGroup, Choice, GameAction, GameEvent, GameState, Origin, Outcome, Rarity, StatKey, Talent } from './types'
 
@@ -26,36 +27,113 @@ let speed = 1
 export function showTitle(): void {
   app.replaceChildren()
   const box = h('div', 'screen center hero')
-  box.append(artEl(heroSvg(), 'hero-art'), h('h1', 'title', '1998重生'), h('p', 'sub', '带着 2026 年的记忆，回到 1998 年出生的那一天。'))
+  box.append(heroEl(), h('h1', 'title', '1998重生'), h('p', 'sub', '带着 2026 年的记忆，回到 1998 年出生的那一天。'))
   const btn = h('button', 'btn big', '开始重生')
-  btn.onclick = showDraw
+  btn.onclick = () => showDraw()
   box.append(btn)
   app.append(box)
 }
 
-function card(name: string, desc: string, rarity: Rarity, delay: number): HTMLElement {
-  const c = h('div', `card ${rarity}`)
-  c.style.animationDelay = `${delay}ms`
+function card(name: string, desc: string, rarity: Rarity, delay: number | null): HTMLElement {
+  const c = h('div', `card ${rarity}${delay === null ? ' still' : ''}`)
+  if (delay !== null) c.style.animationDelay = `${delay}ms`
   c.append(h('div', 'card-r', RARITY_LABEL[rarity]), h('div', 'card-n', name), h('div', 'card-d', desc))
   return c
 }
 
-function showDraw(): void {
-  app.replaceChildren()
-  const box = h('div', 'screen center')
-  box.append(h('h2', '', '抽取你的命运'))
-  const row = h('div', 'cards')
-  const { origin, talents } = drawStart()
-  row.append(card(`出身：${origin.name}`, origin.desc, origin.rarity, 0))
-  talents.forEach((t, i) => row.append(card(`天赋：${t.name}`, t.desc, t.rarity, 250 * (i + 1))))
-  const again = h('button', 'btn', '重抽一次')
-  again.onclick = showDraw
-  const go = h('button', 'btn big', '开始人生')
-  go.onclick = () => startGame(origin, talents)
-  const bar = h('div', 'bar')
-  bar.append(again, go)
-  box.append(row, bar)
-  app.append(box)
+const ALLOC_LABEL: Record<(typeof ALLOC_STATS)[number], string> = {
+  intelligence: '智力', charm: '魅力', health: '体质', happiness: '快乐', memory: '记忆',
+}
+
+/**
+ * 开局：
+ * - 抽卡模式：抽出身 + 3 个天赋，共 5 次重抽机会（每张卡可单独重抽），可分配 20 点；
+ * - 自选模式：自己挑出身和天赋，只能分配 8 点。
+ */
+function showDraw(mode: 'draw' | 'pick' = 'draw'): void {
+  let origin = drawOrigin()
+  let talents: Talent[] = []
+  for (let i = 0; i < 3; i++) talents.push(drawTalent(talents))
+  let rerolls = START_REROLLS
+  const alloc: Record<string, number> = {}
+  let first = true
+
+  const render = () => {
+    const pool = START_POINTS[mode]
+    const used = Object.values(alloc).reduce((a, b) => a + b, 0)
+    app.replaceChildren()
+    const box = h('div', 'screen center draw')
+    box.append(h('h2', '', '决定你的开局'))
+
+    const tabs = h('div', 'tabs')
+    for (const [m, label] of [['draw', '抽卡（20 点）'], ['pick', '自选（8 点）']] as const) {
+      const tb = h('button', `tab${m === mode ? ' on' : ''}`, label)
+      tb.onclick = () => { mode = m; for (const k of Object.keys(alloc)) delete alloc[k]; render() }
+      tabs.append(tb)
+    }
+    box.append(tabs)
+
+    const row = h('div', 'cards')
+    const delay = (i: number) => (first ? 250 * i : null)
+    if (mode === 'draw') {
+      const wrapCard = (el: HTMLElement, reroll: () => void) => {
+        const b = h('button', 'btn small reroll', `重抽（剩 ${rerolls}）`)
+        b.disabled = rerolls <= 0
+        b.onclick = () => { rerolls--; first = false; reroll(); render() }
+        el.append(b)
+        return el
+      }
+      row.append(wrapCard(card(`出身：${origin.name}`, origin.desc, origin.rarity, delay(0)), () => { origin = drawOrigin() }))
+      talents.forEach((tl, i) => row.append(wrapCard(card(`天赋：${tl.name}`, tl.desc, tl.rarity, delay(i + 1)), () => { talents[i] = drawTalent(talents) })))
+      box.append(row)
+    } else {
+      box.append(h('p', 'sub', '选 1 个出身，最多 3 个天赋'))
+      const pickRow = (title: string, items: (Origin | Talent)[], isOrigin: boolean) => {
+        box.append(h('h3', 'sec', title))
+        const grid = h('div', 'cards pick')
+        items.forEach((it) => {
+          const on = isOrigin ? origin.id === it.id : talents.some((x) => x.id === it.id)
+          const c = card(it.name, it.desc, it.rarity, null)
+          c.classList.add('selectable')
+          if (on) c.classList.add('on')
+          c.onclick = () => {
+            if (isOrigin) origin = it as Origin
+            else if (on) talents = talents.filter((x) => x.id !== it.id)
+            else if (talents.length < 3) talents = [...talents, it as Talent]
+            render()
+          }
+          grid.append(c)
+        })
+        box.append(grid)
+      }
+      pickRow('出身', ORIGINS, true)
+      pickRow(`天赋（${talents.length}/3）`, TALENTS, false)
+    }
+
+    box.append(h('h3', 'sec', `分配属性点（剩 ${pool - used}）`))
+    const al = h('div', 'alloc')
+    for (const k of ALLOC_STATS) {
+      const line = h('div', 'alloc-row')
+      const minus = h('button', 'btn small', '−')
+      const plus = h('button', 'btn small', '＋')
+      minus.disabled = !alloc[k]
+      plus.disabled = used >= pool || (alloc[k] ?? 0) >= ALLOC_MAX
+      minus.onclick = () => { alloc[k] = (alloc[k] ?? 0) - 1; render() }
+      plus.onclick = () => { alloc[k] = (alloc[k] ?? 0) + 1; render() }
+      line.append(h('span', '', ALLOC_LABEL[k]), minus, h('b', '', `+${alloc[k] ?? 0}`), plus)
+      al.append(line)
+    }
+    box.append(al)
+
+    const go = h('button', 'btn big', '开始人生')
+    go.onclick = () => startGame(origin, talents, alloc)
+    const bar = h('div', 'bar')
+    bar.append(go)
+    box.append(bar)
+    app.append(box)
+    first = false
+  }
+  render()
 }
 
 const STAT_LABELS: [StatKey, string][] = [
@@ -63,7 +141,7 @@ const STAT_LABELS: [StatKey, string][] = [
   ['fame', '名望'], ['influence', '影响力'], ['memory', '记忆'], ['wealth', '财富'],
 ]
 
-async function startGame(origin: Origin, talents: Talent[]): Promise<void> {
+async function startGame(origin: Origin, talents: Talent[], alloc: Record<string, number>): Promise<void> {
   app.replaceChildren()
   const wrap = h('div', 'game')
   const panel = h('aside', 'panel')
@@ -145,7 +223,7 @@ async function startGame(origin: Origin, talents: Talent[]): Promise<void> {
     },
     async showChoice(ev, choices, s) {
       const wrapEv = h('div', `event ${ev.rarity ?? 'common'}`)
-      wrapEv.append(artEl(eventBanner(ev.category), 'banner'), h('h3', '', `${s.year}（${s.age}岁）${ev.title}`), h('p', '', ev.text))
+      wrapEv.append(bannerEl(ev), h('h3', '', `${s.year}（${s.age}岁）${ev.title}`), h('p', '', ev.text))
       stage.replaceChildren(wrapEv)
       return new Promise<Choice>((res) => {
         choices.forEach((c) => {
@@ -193,14 +271,16 @@ async function startGame(origin: Origin, talents: Talent[]): Promise<void> {
       reveal()
       return p
     },
-    async showOutcome(ev, outcome: Outcome, reliable, s) {
+    async showOutcome(ev, outcome: Outcome, reliable, s, auto) {
       const note = reliable === false ? '（记忆出现偏差！）' : ''
       addLog(s, ev, `${outcome.text}${note}`)
-      await waitClick('继续')
+      reveal()
+      if (auto) await sleep(1500 / speed)
+      else await waitClick('继续')
     },
   }
 
-  const { state, ending } = await runGame(origin, talents, host)
+  const { state, ending } = await runGame(origin, talents, host, Math.random, alloc)
   showEnding(state, ending)
 }
 

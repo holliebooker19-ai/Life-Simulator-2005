@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { ALL_ACTIONS } from '../src/data/actions'
 import { ALL_EVENTS } from '../src/data/events'
@@ -6,6 +7,21 @@ import { availableActions, markAction, newState, withExtraChoices } from '../src
 
 // 真实人名/公司名黑名单：出现即说明没有按 docs/NAMING.md 改名
 const FORBIDDEN = ['马斯克', 'Musk', 'OpenAI', 'Anthropic', 'Twitter', '推特', 'ChatGPT', 'Claude', '特朗普', 'Trump', '习近平', '普京', '拜登', '奥巴马', 'Putin', 'Biden', 'Obama']
+
+/** 从改名表（docs/NAMING.md 与 docs/naming/*.md）自动提取“现实”列，作为额外黑名单 */
+function namingForbidden(): string[] {
+  const files = ['docs/NAMING.md']
+  try { for (const f of readdirSync('docs/naming')) if (f.endsWith('.md')) files.push(`docs/naming/${f}`) } catch { /* 目录可选 */ }
+  const words: string[] = []
+  for (const f of files) {
+    for (const line of readFileSync(f, 'utf8').split('\n')) {
+      const m = line.match(/^\|([^|]+)\|[^|]+\|/)
+      if (!m || /^[\s-]+$/.test(m[1]) || m[1].trim() === '现实') continue
+      m[1].replace(/（[^）]*）|\([^)]*\)/g, '').split('/').map((w) => w.trim()).filter((w) => w.length >= 2).forEach((w) => words.push(w))
+    }
+  }
+  return words
+}
 
 describe('events', () => {
   it('id 全局唯一', () => {
@@ -45,7 +61,7 @@ describe('events', () => {
 
   it('不含真实人名/公司名', () => {
     const blob = JSON.stringify(ALL_EVENTS)
-    for (const w of FORBIDDEN) expect(blob.includes(w), `出现未改名的词：${w}`).toBe(false)
+    for (const w of [...FORBIDDEN, ...namingForbidden()]) expect(blob.includes(w), `出现未改名的词：${w}`).toBe(false)
   })
 })
 
@@ -71,7 +87,7 @@ describe('actions', () => {
 
   it('不含真实人名/公司名', () => {
     const blob = JSON.stringify([ALL_ACTIONS, EXTRA_CHOICES])
-    for (const w of FORBIDDEN) expect(blob.includes(w), `出现未改名的词：${w}`).toBe(false)
+    for (const w of [...FORBIDDEN, ...namingForbidden()]) expect(blob.includes(w), `出现未改名的词：${w}`).toBe(false)
   })
 
   it('任何年龄的新角色都有足够多的行动可选', () => {

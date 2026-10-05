@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { actionPoints, applyEffects, endYear, meets, memoryReliability, newState, resolveChoice } from '../src/engine'
+import { actionPoints, pacing, applyEffects, endYear, meets, memoryReliability, newState, resolveChoice } from '../src/engine'
 
 describe('engine', () => {
   it('偏离度越高，记忆越不可靠', () => {
@@ -42,10 +42,23 @@ describe('年份条件与行动点', () => {
     expect(meets(s, { maxYear: 2005 })).toBe(false)
   })
 
-  it('行动点随年龄增加', () => {
+  it('襁褓期（<7 岁）没有行动，之后行动点随年龄增加', () => {
     const s = newState()
-    s.age = 3; expect(actionPoints(s)).toBe(1)
+    s.age = 3; expect(actionPoints(s)).toBe(0)
+    s.age = 7; expect(actionPoints(s)).toBe(2)
     s.age = 10; expect(actionPoints(s)).toBe(2)
     s.age = 25; expect(actionPoints(s)).toBe(3)
+  })
+})
+
+describe('节奏 pacing', () => {
+  it('襁褓期自动继续、无自由发挥选项；之后恢复', () => {
+    const s = newState()
+    s.age = 2
+    expect(pacing(s)).toMatchObject({ randomEvents: 0, extraChoices: 0, autoAdvance: true })
+    s.age = 5
+    expect(pacing(s)).toMatchObject({ actionPoints: 0, extraChoices: 0, autoAdvance: true })
+    s.age = 8
+    expect(pacing(s)).toMatchObject({ actionPoints: 2, extraChoices: 2, autoAdvance: false })
   })
 })

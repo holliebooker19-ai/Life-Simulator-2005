@@ -74,3 +74,54 @@ export function artEl(svg: string, cls: string): HTMLDivElement {
   d.innerHTML = svg
   return d
 }
+
+/**
+ * 外部配图（可选）：放在 public/img/ 下即可自动生效，缺图时回退到上面的内联 SVG。
+ * 命名规则见 public/img/README.md 与 docs/ART_PROMPTS.md。
+ */
+const imgOk = new Map<string, Promise<HTMLImageElement | null>>()
+
+function loadImg(src: string): Promise<HTMLImageElement | null> {
+  let p = imgOk.get(src)
+  if (!p) {
+    p = new Promise((res) => {
+      const im = new Image()
+      im.onload = () => res(im)
+      im.onerror = () => res(null)
+      im.src = src
+    })
+    imgOk.set(src, p)
+  }
+  return p
+}
+
+/** 依次尝试候选图片，第一张加载成功的替换 box 内容 */
+function upgradeToImage(box: HTMLElement, candidates: string[], alt: string): void {
+  const base = import.meta.env.BASE_URL
+  void (async () => {
+    for (const c of candidates) {
+      const im = await loadImg(`${base}img/${c}`)
+      if (im) {
+        const el = im.cloneNode() as HTMLImageElement
+        el.alt = alt
+        box.classList.add('has-img')
+        box.replaceChildren(el)
+        return
+      }
+    }
+  })()
+}
+
+/** 事件横幅：img/events/<事件id>.webp → img/category/<分类>.webp → 内联 SVG */
+export function bannerEl(ev: GameEvent): HTMLElement {
+  const box = artEl(eventBanner(ev.category), 'banner')
+  upgradeToImage(box, [`events/${ev.id}.webp`, `category/${ev.category}.webp`], ev.title)
+  return box
+}
+
+/** 首页大图：img/hero.webp → 内联 SVG */
+export function heroEl(): HTMLElement {
+  const box = artEl(heroSvg(), 'hero-art')
+  upgradeToImage(box, ['hero.webp'], '1998重生')
+  return box
+}

@@ -98,3 +98,30 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, 
   .choice { min-height:46px; font-size:15px; padding:10px 12px; }
   .action-list { grid-template-columns:1fr; }
 }
+
+/* 开局 */
+.card.still { opacity:1; animation:none; }
+.card.legendary.still { animation: glow 1.6s ease-in-out infinite alternate; }
+.card.selectable { cursor:pointer; }
+.card.selectable.on { outline:3px solid var(--gold); }
+.cards.pick .card { width:160px; padding:12px; }
+.reroll { margin-top:10px; }
+.reroll:disabled, .alloc .btn:disabled { opacity:.4; cursor:default; }
+.sec { margin:8px 0 0; color:var(--gold); }
+.alloc { display:grid; gap:6px; width:min(100%,320px); }
+.alloc-row { display:grid; grid-template-columns:1fr 44px 56px 44px; align-items:center; gap:6px; text-align:center; }
+.alloc-row span { text-align:left; }
+.alloc-row .btn { margin:0; padding:6px 0; }
+.draw { justify-content:flex-start; padding-top:24px; }
+@media (max-width:720px) {
+  .cards.pick { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .cards.pick .card { width:auto; }
+  .draw .tabs { justify-content:center; }
+}
+
+/* 外部配图 */
+.banner.has-img { height:auto; aspect-ratio:16 / 7; max-height:170px; }
+.banner.has-img img, .hero-art.has-img img { display:block; width:100%; height:100%; object-fit:cover; }
+@media (max-width:720px) { .banner.has-img { max-height:110px; } }
+.draw .cards .card { padding:10px 14px; }
+.draw .card-n { margin:2px 0; }

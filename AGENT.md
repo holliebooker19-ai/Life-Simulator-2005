@@ -15,13 +15,15 @@
 - `src/engine.ts` 纯逻辑（状态、条件、结算、结局），不得依赖 DOM。
 - `src/game.ts` 游戏主循环，通过 `Host` 接口与 UI 解耦。
 - `src/ui.ts` / `style.css` UI 与动画。
-- `src/data/` 全部游戏内容：`talents.ts`、`events/*.ts`。
+- `src/data/` 全部游戏内容：`talents.ts`（出身/天赋）、`events/*.ts`（事件）、`actions/*.ts`（每年自由行动）、`extra-choices.ts`（通用自由发挥选项）。事件与行动**自动注册**：新建文件并 export 数组即可，不要改 `index.ts`。
+- `public/img/` 可选配图（`.webp`），缺图自动回退内置 SVG；规则见 `public/img/README.md`、`docs/ART_PROMPTS.md`。
+- `docs/PARALLEL.md` 并行开发规范；`docs/ROADMAP.md` 路线图；`docs/naming/` 改名分表。
 - `docs/EVENT_GUIDE.md` 事件写作规范（写事件前必读）。
 - `docs/NAMING.md` 真实人物/公司的改名表（写事件前必读）。
 
 ## 硬性规则
 1. 语言：游戏文本使用**简体中文**（暂不做日文）。
-2. 真实人物、公司、产品一律按 `docs/NAMING.md` 改名，**禁止出现真名**。新增改名必须同一个 PR 补进表里。政治人物允许调侃恶搞（仅限谐音/外号），边界见 `docs/NAMING.md`。
+2. 真实人物、公司、产品一律按 `docs/NAMING.md` 改名，**禁止出现真名**。新增改名必须同一个 PR 补进表里（并行开发时写成 `docs/naming/<批次>.md`，测试会自动读取）。政治人物允许调侃恶搞（仅限谐音/外号），边界见 `docs/NAMING.md`。
 3. 真实历史事件（世界杯结果、股市走势等）可以使用，但必须填写 `realFact` 并确保事实准确。拿不准的数据宁可写得模糊，不要编造具体数字。
 4. 游戏中的财富、赌博均为虚拟，不涉及真实资金；文案保持游戏化口吻。
 5. 提交前必须通过：`npm run typecheck`、`npm test`、`npm run build`。
@@ -33,3 +35,5 @@
 - **记忆**：`usesMemory` 的选项按 `memoryReliability` 判定成败；世界线偏离度越高越不可靠；2026 年之后预知失效。
 - **世界线偏离度**：玩家利用记忆干预现实会增加偏离度；影响力和偏离度双高时触发改写世界线的事件与结局。
 - **年龄限制**：主角 1998 年出生，2005 年 7 岁，2013 年 15 岁，2026 年 28 岁。游戏重点年份是 2005 年起；15 岁前的现实事件需要“父母代理”（`parents-trust`、`family-has-money` 等标记）才能参与，写事件时要考虑主角当时的年龄是否合理。
+- **节奏**：`engine.ts` 的 `pacing()` 决定各年龄段的随机事件数、行动点、自由发挥选项数。0–6 岁为襁褓期（无行动菜单、结果自动继续），调节奏只改这张表。
+- **并行**：多个会话同时写内容时，遵守 `docs/PARALLEL.md`（各写各的新文件，不改引擎/UI/类型/已有事件）。
